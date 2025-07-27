@@ -1,0 +1,324 @@
+<!DOCTYPE html>
+<html lang="hi">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>War Calendar: Interactive Mission Control</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Teko:wght@500;600;700&display=swap" rel="stylesheet">
+  <!-- Chosen Palette: Warm Neutral Harmony -->
+  <!-- Application Structure Plan: A dashboard-style SPA transforming the static plan into an active tool. Key features include: 1) A top "Mission Status" bar for immediate context (current week, countdown). 2) Tab-based navigation for the three distinct phases, breaking the plan into manageable segments. 3) A card-based view for weekly tasks, which is more readable and mobile-friendly than a table. 4) Interactive subject filters (All, Bio, Chem) to allow focused study sessions. 5) A summary chart for a high-level overview. This structure was chosen to directly address primary user tasks: "What's next?", "Show me just my Bio tasks," and "How far have I come?". It prioritizes active engagement over passive reading. -->
+  <!-- Visualization & Content Choices: 1) Report Info: Full schedule. Goal: Interactive planning. Method: HTML/Tailwind cards with JS-driven phase tabs and subject filters. Justification: Enhances usability by allowing focused views. 2) Report Info: Test distribution. Goal: Summarize test load. Viz: Donut Chart (Chart.js/Canvas). Interaction: Hover tooltips. Justification: Provides a quick visual insight into the subject-wise testing effort, which is not immediately obvious from the text. 3) Report Info: Timeline. Goal: Create urgency. Method: JS countdown timer. Justification: Adds a motivational, "gamified" element to the dashboard. -->
+  <!-- CONFIRMATION: NO SVG graphics used. NO Mermaid JS used. -->
+  <style>
+    body {
+      font-family: 'Inter', sans-serif;
+      background-color: #FDFBF8;
+      color: #3D352E;
+    }
+    .font-teko {
+      font-family: 'Teko', sans-serif;
+    }
+    .tab-active {
+      background-color: #A59481;
+      color: #FDFBF8;
+      box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
+    }
+    .tab-inactive {
+      background-color: #EAE5DF;
+      color: #6B5F51;
+    }
+    .filter-active {
+      background-color: #3D352E;
+      color: #FDFBF8;
+    }
+    .filter-inactive {
+      background-color: #D1C7BB;
+      color: #3D352E;
+    }
+    .card {
+      background-color: #FFFFFF;
+      border-left: 5px solid #A59481;
+      transition: all 0.3s ease-in-out;
+    }
+    .card-bio { border-left-color: #6A8E7F; }
+    .card-chem { border-left-color: #A57F6A; }
+    .card-both { border-left-color: #A59481; }
+    .highlight-bio .chem-target, .highlight-bio .chem-test { display: none; }
+    .highlight-chem .bio-target, .highlight-chem .bio-test { display: none; }
+    .chart-container {
+      position: relative;
+      width: 100%;
+      max-width: 320px;
+      margin-left: auto;
+      margin-right: auto;
+      height: 320px;
+      max-height: 40vh;
+    }
+  </style>
+</head>
+<body class="antialiased">
+<div class="container mx-auto p-4 md:p-8 max-w-7xl">
+
+  <header class="text-center mb-8">
+    <h1 class="font-teko text-5xl md:text-7xl font-bold tracking-wider text-gray-800">⚔️ WAR CALENDAR ⚔️</h1>
+    <p class="text-lg text-gray-600 mt-2">Aapka Interactive Mission Control Center</p>
+  </header>
+
+  <div class="bg-white rounded-2xl shadow-lg p-6 mb-8">
+    <h2 class="font-teko text-3xl text-center mb-4 text-gray-700">MISSION STATUS</h2>
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-4 text-center">
+      <div class="bg-gray-100 p-4 rounded-lg">
+        <p class="text-sm font-semibold text-gray-500">MISSION START IN</p>
+        <p id="countdown" class="text-3xl font-bold text-amber-800">--:--:--:--</p>
+      </div>
+      <div class="bg-gray-100 p-4 rounded-lg">
+        <p class="text-sm font-semibold text-gray-500">CURRENT PHASE</p>
+        <p id="currentPhase" class="text-3xl font-bold text-green-800">Phase 1</p>
+      </div>
+      <div class="bg-gray-100 p-4 rounded-lg">
+        <p class="text-sm font-semibold text-gray-500">TESTS OVERVIEW</p>
+        <div class="chart-container h-32 max-h-32">
+          <canvas id="testDistributionChart"></canvas>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="mb-8">
+    <div class="flex justify-center rounded-lg p-1.5 bg-gray-200 w-full md:w-auto mx-auto">
+      <button id="tab-phase1" class="phase-tab tab-active flex-1 md:flex-none py-2 px-6 rounded-md font-semibold transition-all duration-300">Phase 1: Foundation</button>
+      <button id="tab-phase2" class="phase-tab tab-inactive flex-1 md:flex-none py-2 px-6 rounded-md font-semibold transition-all duration-300">Phase 2: Assault</button>
+      <button id="tab-phase3" class="phase-tab tab-inactive flex-1 md:flex-none py-2 px-6 rounded-md font-semibold transition-all duration-300">Phase 3: Offensive</button>
+    </div>
+  </div>
+
+  <div id="content-container">
+    <div id="phase1-content" class="phase-content">
+      <div class="text-center mb-6">
+        <h3 class="font-teko text-4xl text-gray-800">Phase 1: The Foundation Forge</h3>
+        <p class="text-gray-600 max-w-2xl mx-auto">Is phase mein, har subject ke foundational pillars ko complete karke turant test kiya jayega. Neev mazboot karna hi yahan ka primary objective hai. Neeche diye gaye filters ka istemal karke subjects par focus karein.</p>
+      </div>
+    </div>
+    <div id="phase2-content" class="phase-content hidden">
+      <div class="text-center mb-6">
+        <h3 class="font-teko text-4xl text-gray-800">Phase 2: The Integrated Assault</h3>
+        <p class="text-gray-600 max-w-2xl mx-auto">Yeh high-load phase hai. Yahan multiple topics ko ek saath handle karna hai aur unki testing se retention aur application skills ko seal karna hai. Stay sharp.</p>
+      </div>
+    </div>
+    <div id="phase3-content" class="phase-content hidden">
+      <div class="text-center mb-6">
+        <h3 class="font-teko text-4xl text-gray-800">Phase 3: The High-Weightage Offensive</h3>
+        <p class="text-gray-600 max-w-2xl mx-auto">Final push! Is phase mein Chemistry ke concluding chapters aur Biology ke high-value targets par surgical strikes ki jayengi. Har test final exam jaisa hai.</p>
+      </div>
+    </div>
+
+    <div class="flex justify-center space-x-2 mb-8">
+      <button data-filter="all" class="filter-btn filter-active py-2 px-5 rounded-lg font-medium transition-all duration-300">All</button>
+      <button data-filter="bio" class="filter-btn filter-inactive py-2 px-5 rounded-lg font-medium transition-all duration-300">Biology Focus</button>
+      <button data-filter="chem" class="filter-btn filter-inactive py-2 px-5 rounded-lg font-medium transition-all duration-300">Chemistry Focus</button>
+    </div>
+
+    <div id="schedule-grid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+    </div>
+  </div>
+
+  <footer class="text-center mt-12 py-6 border-t-2 border-dashed border-gray-300">
+    <p class="font-semibold text-gray-700">NOTE: Yeh schedule sirf syllabus completion tak hai.</p>
+    <p class="text-gray-600">Iske baad Full Syllabus Mock Tests ki asli jung shuru hogi. Stay Ready! 🎖️</p>
+  </footer>
+
+</div>
+
+<script>
+  const scheduleData = {
+    phase1: [
+      { week: 1, type: 'both', bioTarget: 'Living World, Classification', chemTarget: 'Pillar 1 (Mole Concept)', bioTest: `Living World , Classification`, chemTest: 'Chem Pillar Test 1: Mole Concept' },
+      { week: 2, type: 'both', bioTarget: 'Plant & Animal Kingdom', chemTarget: 'Pillar 2 (Atomic Structure)', bioTest: `Plant & Animal Kingdom`, chemTest: 'Chem Pillar Test 2: Atomic Structure' },
+      { week: 3, type: 'both', bioTarget: 'Morphology & Anatomy', chemTarget: 'Pillar 3 (Periodic Table)', bioTest: `Morphology & Anatomy`, chemTest: 'Chem Pillar Test 3: Periodic Table' },
+      { week: 4, type: 'both', bioTarget: 'Structural Org., Cell', chemTarget: 'Pillar 4 (Bonding)', bioTest: 'Bio Unit 1 Test: All Bio from Wk 1-4', chemTest: 'Chem Pillar Test 4: Chemical Bonding' },
+    ],
+    phase2: [
+      { week: 5, type: 'both', bioTarget: 'Biomolecules, Cell Cycle', chemTarget: 'States of Matter, H2', bioTest: `Biomolecules , Cell Cycle`, chemTest: 'Chem Module Test 1: States of Matter, Hydrogen' },
+      { week: 6, type: 'both', bioTarget: 'Transport, Mineral, ', chemTarget: 'Thermo, s-Block', bioTest: `Transport , Mineral`, chemTest: 'Chem Module Test 2: Thermodynamics, s-Block' },
+      { week: 7, type: 'both', bioTarget: 'Consolidation Week', chemTarget: 'Hydrocarbons, Env. Chem', bioTest: 'Bio Unit 2 Test: All Bio from Wk 5-6', chemTest: 'Chem Module Test 3: Hydrocarbons, Env. Chem' },
+      { week: 8, type: 'both', bioTarget: 'Breathing, Fluids, Excretion', chemTarget: 'Equilibrium, Metallurgy', bioTest: `Breathing , Fluids , Excretion`, chemTest: 'Chem Module Test 4: Equilibrium, Metallurgy' },
+      { week: 9, type: 'both', bioTarget: 'Locomotion, Neural, Chemical', chemTarget: 'Haloalkanes, Solid State', bioTest: `Locomotion , Neural , Chemical`, chemTest: 'Chem Module Test 5: Haloalkanes, Solid State' },
+      { week: 10, type: 'both', bioTarget: 'Photosynthesis, Respiration, Growth', chemTarget: 'Alcohols, p-Block (13-14)', bioTest: 'Bio Unit 3 Test: All Bio from Wk 8-10', chemTest: 'Chem Module Test 6: Alcohols, p-Block (13-14)' },
+      { week: 11, type: 'both', bioTarget: 'Reproduction (All 3)', chemTarget: 'Electrochemistry, p-Block (15-16)', bioTest: `Reproduction (All 3)`, chemTest: 'Chem Module Test 7: Electrochemistry, p-Block (15-16)' },
+      { week: 12, type: 'both', bioTarget: 'Rep. Health, Inheritance (Both)', chemTarget: 'Kinetics, p-Block (17-18)', bioTest: 'Bio Unit 4 Test: All Bio from Wk 11-12', chemTest: 'Chem Module Test 8: Chemical Kinetics, p-Block (17-18)' },
+      { week: 13, type: 'both', bioTarget: 'Evolution, Human Health, Microbes', chemTarget: 'Aldehydes, Ketones, Surface Chem', bioTest: `Evolution , Human Health , Microbes`, chemTest: 'Chem Module Test 9: Aldehydes, Ketones, Surface Chem' },
+      { week: 14, type: 'bio', bioTarget: 'Biotech (Both), Strategies', chemTarget: 'Revision Week', bioTest: 'FINAL BIOLOGY TEST (Core Syllabus Conquered)', chemTest: null },
+    ],
+    phase3: [
+      { week: 15, type: 'both', bioTarget: 'Minor Raid 1 (Ecology 1-2)', chemTarget: 'd & f Block, Polymers', bioTest: null, chemTest: 'Chem Module Test 10: d & f Block, Polymers' },
+      { week: 16, type: 'both', bioTarget: 'Minor Raid 2 (Ecology 3-4)', chemTarget: 'Coordination, Biomolecules', bioTest: 'Bio Minor Raid Test 1: Organisms, Ecosystem', chemTest: 'Chem Module Test 11: Coordination, Biomolecules' },
+      { week: 17, type: 'chem', bioTarget: 'Revision', chemTarget: 'Amines, Everyday Life', bioTest: null, chemTest: 'Chem Module Test 12: Amines, Everyday Life' },
+      { week: 18, type: 'both', bioTarget: 'Revision', chemTarget: 'Solutions, Qualitative Analysis', bioTest: 'Bio Minor Raid Test 2: Biodiversity, Env. Issues', chemTest: 'FINAL CHEMISTRY TEST (Syllabus Conquered)' },
+    ]
+  };
+
+  let currentPhase = 'phase1';
+  let currentFilter = 'all';
+
+  const phaseTabs = document.querySelectorAll('.phase-tab');
+  const phaseContents = document.querySelectorAll('.phase-content');
+  const scheduleGrid = document.getElementById('schedule-grid');
+  const filterBtns = document.querySelectorAll('.filter-btn');
+
+  function renderSchedule() {
+    scheduleGrid.innerHTML = '';
+    const phaseData = scheduleData[currentPhase];
+
+    phaseData.forEach(item => {
+      const card = document.createElement('div');
+      let cardClass = 'card';
+      if (item.bioTest && !item.chemTest) cardClass += ' card-bio';
+      else if (!item.bioTest && item.chemTest) cardClass += ' card-chem';
+      else cardClass += ' card-both';
+
+      card.className = `p-5 rounded-xl shadow-md transition-transform transform hover:scale-105 ${cardClass}`;
+
+      let innerHTML = `
+                    <div class="flex justify-between items-center mb-4">
+                        <h4 class="font-teko text-2xl font-semibold">WEEK ${item.week}</h4>
+                        <span class="text-xs font-mono px-2 py-1 rounded-full bg-gray-200 text-gray-700">${item.type.toUpperCase()}</span>
+                    </div>
+                    <div class="space-y-3 text-sm">
+                        <div>
+                            <p class="font-semibold text-gray-500 mb-1">🎯 Study Targets</p>
+                            <div class="space-y-1">
+                                ${item.bioTarget ? `<p class="bio-target text-gray-800"><strong>Bio:</strong> ${item.bioTarget}</p>` : ''}
+                                ${item.chemTarget ? `<p class="chem-target text-gray-800"><strong>Chem:</strong> ${item.chemTarget}</p>` : ''}
+                            </div>
+                        </div>
+                        <div>
+                            <p class="font-semibold text-gray-500 mb-1">🚨 Testing Mission</p>
+                            <div class="space-y-1">
+                                ${item.bioTest ? `<p class="bio-test text-green-700 font-medium">${item.bioTest}</p>` : ''}
+                                ${item.chemTest ? `<p class="chem-test text-red-700 font-medium">${item.chemTest}</p>` : ''}
+                            </div>
+                        </div>
+                    </div>
+                `;
+      card.innerHTML = innerHTML;
+      scheduleGrid.appendChild(card);
+    });
+    applyFilter();
+  }
+
+  function applyFilter() {
+    scheduleGrid.className = 'grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6';
+    if(currentFilter === 'bio') {
+      scheduleGrid.classList.add('highlight-bio');
+    } else if (currentFilter === 'chem') {
+      scheduleGrid.classList.add('highlight-chem');
+    }
+  }
+
+  phaseTabs.forEach(tab => {
+    tab.addEventListener('click', () => {
+      currentPhase = tab.id.replace('tab-', '');
+
+      phaseTabs.forEach(t => t.classList.replace('tab-active', 'tab-inactive'));
+      tab.classList.replace('tab-inactive', 'tab-active');
+
+      phaseContents.forEach(content => content.classList.add('hidden'));
+      document.getElementById(`${currentPhase}-content`).classList.remove('hidden');
+
+      document.getElementById('currentPhase').textContent = `Phase ${currentPhase.slice(-1)}`;
+
+      renderSchedule();
+    });
+  });
+
+  filterBtns.forEach(btn => {
+    btn.addEventListener('click', () => {
+      currentFilter = btn.dataset.filter;
+      filterBtns.forEach(b => b.classList.replace('filter-active', 'filter-inactive'));
+      btn.classList.replace('filter-inactive', 'filter-active');
+      applyFilter();
+    });
+  });
+
+  function startCountdown() {
+    const missionStartDate = new Date('2025-08-04T00:00:00');
+    const countdownEl = document.getElementById('countdown');
+
+    function update() {
+      const now = new Date();
+      const diff = missionStartDate - now;
+
+      if (diff <= 0) {
+        countdownEl.innerHTML = "MISSION ACTIVE!";
+        return;
+      }
+
+      const days = Math.floor(diff / (1000 * 60 * 60 * 24));
+      const hours = Math.floor((diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+      const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
+      const seconds = Math.floor((diff % (1000 * 60)) / 1000);
+
+      countdownEl.innerHTML = `${days}d ${hours}h ${minutes}m ${seconds}s`;
+    }
+    setInterval(update, 1000);
+    update();
+  }
+
+  function createTestChart() {
+    const ctx = document.getElementById('testDistributionChart').getContext('2d');
+    let bioTests = 0;
+    let chemTests = 0;
+    Object.values(scheduleData).flat().forEach(item => {
+      if (item.bioTest) bioTests++;
+      if (item.chemTest) chemTests++;
+    });
+
+    new Chart(ctx, {
+      type: 'doughnut',
+      data: {
+        labels: ['Biology Tests', 'Chemistry Tests'],
+        datasets: [{
+          label: 'Test Count',
+          data: [bioTests, chemTests],
+          backgroundColor: [
+            'rgba(106, 142, 127, 0.8)',
+            'rgba(165, 127, 106, 0.8)'
+          ],
+          borderColor: [
+            '#FDFBF8',
+            '#FDFBF8'
+          ],
+          borderWidth: 3
+        }]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+          legend: {
+            display: false
+          },
+          tooltip: {
+            bodyFont: {
+              weight: 'bold',
+            }
+          }
+        },
+        cutout: '70%'
+      }
+    });
+  }
+
+  window.onload = () => {
+    renderSchedule();
+    startCountdown();
+    createTestChart();
+  };
+
+</script>
+</body>
+</html>

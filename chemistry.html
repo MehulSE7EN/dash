@@ -1,0 +1,362 @@
+<!DOCTYPE html>
+<html lang="hi" class="scroll-smooth">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Chemistry Blueprint: Interactive Protocol</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Teko:wght@600;700&display=swap" rel="stylesheet">
+  <!-- Chosen Palette: Blueprint (Light Slate, White, Deep Blue Accent) -->
+  <!-- Application Structure Plan: A two-column "Blueprint" dashboard. The left column is a sticky "Control Panel" providing persistent navigation, at-a-glance progress via a large donut chart, and the non-negotiable rules. The right column is the scrollable "Blueprint Area" containing the detailed action plan. This structure is chosen to separate high-level strategy (always visible) from tactical execution details (scrollable), allowing the user to maintain context while focusing on specific tasks. It's a different mental model from the single-feed "War Room," promoting a more analytical and planned approach suitable for chemistry. -->
+  <!-- Visualization & Content Choices:
+      - Report Info: Overall Progress -> Goal: Constant Feedback -> Viz/Method: Large Donut Chart (Chart.js) in the sticky sidebar. Interaction: Updates on task completion. Justification: Placing the primary progress metric in a persistent sidebar makes it a constant, unavoidable accountability tool.
+      - Report Info: Phase 1 Pillars -> Goal: Emphasize Foundational Steps -> Viz/Method: Numbered list with large, clear checklist items. Interaction: Checkboxes. Justification: A numbered list format reinforces the idea of a sequential, foundational process.
+      - Report Info: Phase 2 & 3 Weekly Plan -> Goal: Detailed Scheduling -> Viz/Method: A clean, restyled table with clear visual hierarchy for Major/Minor tasks using tags. Interaction: Checkboxes. Justification: A table remains the most data-dense and scannable format for this type of schedule.
+      - Report Info: Core Rules -> Goal: Reinforce Core Principles -> Viz/Method: A dedicated, styled block in the sticky sidebar. Justification: Making rules constantly visible prevents them from being forgotten.
+  -->
+  <!-- CONFIRMATION: NO SVG graphics used. NO Mermaid JS used. -->
+  <style>
+    body {
+      font-family: 'Inter', sans-serif;
+      background-color: #f1f5f9; /* slate-100 */
+    }
+    .font-teko {
+      font-family: 'Teko', sans-serif;
+    }
+    .accent-blue { color: #2563eb; }
+    .bg-blue { background-color: #2563eb; }
+    .border-blue { border-color: #2563eb; }
+    .nav-link {
+      transition: all 0.2s ease-in-out;
+      border-left: 3px solid transparent;
+      color: #475569; /* slate-600 */
+    }
+    .nav-link:hover {
+      color: #0f172a; /* slate-900 */
+      background-color: #e2e8f0; /* slate-200 */
+    }
+    .nav-link.active {
+      color: #2563eb; /* blue-600 */
+      border-left-color: #2563eb;
+      background-color: #dbeafe; /* blue-100 */
+      font-weight: 600;
+    }
+    .task-checkbox {
+      width: 1.75rem;
+      height: 1.75rem;
+      cursor: pointer;
+      appearance: none;
+      border: 2px solid #cbd5e1; /* slate-300 */
+      border-radius: 0.375rem;
+      position: relative;
+      transition: all 0.2s ease-in-out;
+      flex-shrink: 0;
+    }
+    .task-checkbox:checked {
+      background-color: #2563eb;
+      border-color: #2563eb;
+    }
+    .task-checkbox:checked::after {
+      content: '✔';
+      color: #ffffff;
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      font-size: 1.1rem;
+      font-weight: bold;
+    }
+    .chart-container {
+      position: relative;
+      width: 100%;
+      max-width: 220px;
+      margin: 0 auto;
+    }
+  </style>
+</head>
+<body class="text-slate-800">
+
+<div class="flex flex-col md:flex-row min-h-screen">
+  <!-- Left Sidebar (Control Panel) -->
+  <aside class="w-full md:w-80 lg:w-96 bg-white border-r border-slate-200 p-6 md:sticky md:top-0 md:h-screen flex flex-col">
+    <div class="text-center md:text-left">
+      <h1 class="font-teko text-4xl font-bold accent-blue">CHEMISTRY BLUEPRINT</h1>
+      <p class="text-slate-500 text-sm">Precision Execution Protocol</p>
+    </div>
+
+    <div class="my-8 text-center">
+      <div class="chart-container">
+        <canvas id="progressChart"></canvas>
+      </div>
+    </div>
+
+    <nav id="main-nav" class="flex-grow space-y-2">
+      <a href="#phase1" class="nav-link block font-medium p-3 rounded-lg">Phase 1: Foundation Forge</a>
+      <a href="#phase2" class="nav-link block font-medium p-3 rounded-lg">Phase 2: Integrated Assault</a>
+      <a href="#phase3" class="nav-link block font-medium p-3 rounded-lg">Phase 3: High-Weightage Offensive</a>
+      <a href="#rules" class="nav-link block font-medium p-3 rounded-lg">🚨 Non-Negotiable Rules</a>
+    </nav>
+
+    <div class="mt-auto pt-6 border-t border-slate-200 text-center">
+      <p class="text-xs text-slate-400">&copy; 2025 Protocol. Victory is non-negotiable.</p>
+    </div>
+  </aside>
+
+  <!-- Right Content Area -->
+  <main id="content-area" class="flex-1 p-6 md:p-10 lg:p-12 overflow-y-auto">
+    <section id="dashboard" class="mb-16">
+      <h2 class="font-teko text-5xl md:text-6xl font-bold tracking-tight mb-4">Mission Briefing 📜</h2>
+      <p class="max-w-3xl text-slate-600 text-lg">Mastery of NEET Chemistry by Dec 31st, 2025. This blueprint is your single source of truth. Execute with zero deviation.</p>
+      <div class="mt-8 bg-white p-6 rounded-lg border border-slate-200">
+        <h3 class="text-xl font-bold mb-4">Core Philosophy</h3>
+        <ul class="space-y-3 text-slate-600">
+          <li class="flex items-start"><span class="accent-blue font-bold text-xl mr-3">1.</span><span><strong class="text-slate-800">Foundation First:</strong> Hum pehle woh 5 pillars banayenge jinke bina Chemistry khadi nahi ho sakti.</span></li>
+          <li class="flex items-start"><span class="accent-blue font-bold text-xl mr-3">2.</span><span><strong class="text-slate-800">Major/Minor Warfare:</strong> High-concept "Major" aur memory-based "Minor" chapter ko pair karke overload prevent karenge.</span></li>
+          <li class="flex items-start"><span class="accent-blue font-bold text-xl mr-3">3.</span><span><strong class="text-slate-800">The Module System:</strong> High-volume chapters ko realistic timelines di jayengi. No burnout.</span></li>
+        </ul>
+      </div>
+    </section>
+
+    <section id="phase1" class="mb-16 scroll-mt-16">
+      <div class="mb-8">
+        <h3 class="text-sm font-bold uppercase tracking-widest accent-blue">Phase 1: Foundation Forge</h3>
+        <h2 class="font-teko text-4xl md:text-5xl font-extrabold mt-1">The 5 Foundational Pillars</h2>
+        <p class="max-w-2xl text-slate-600 mt-2">Goal: Forge the 5 pillars. Zero weakness will be tolerated. Mark each pillar as complete.</p>
+      </div>
+      <div class="space-y-4">
+        <!-- Pillar Cards will be injected here by JS -->
+      </div>
+    </section>
+
+    <section id="phase2" class="mb-16 scroll-mt-16">
+      <div class="mb-8">
+        <h3 class="text-sm font-bold uppercase tracking-widest accent-blue">Phase 2: Sept - Oct</h3>
+        <h2 class="font-teko text-4xl md:text-5xl font-extrabold mt-1">The Integrated Assault</h2>
+        <p class="max-w-2xl text-slate-600 mt-2">Goal: Systematically dismantle the syllabus. Buffer weeks are now focused <span class="text-slate-800 font-semibold">Consolidation Weekends</span>.</p>
+      </div>
+      <div class="bg-white border border-slate-200 rounded-lg overflow-hidden">
+        <div class="overflow-x-auto">
+          <table class="w-full text-left" id="phase2-table">
+            <!-- Table content will be injected here -->
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <section id="phase3" class="mb-16 scroll-mt-16">
+      <div class="mb-8">
+        <h3 class="text-sm font-bold uppercase tracking-widest accent-blue">Phase 3: Nov - Dec</h3>
+        <h2 class="font-teko text-4xl md:text-5xl font-extrabold mt-1">The High-Weightage Offensive</h2>
+        <p class="max-w-2xl text-slate-600 mt-2">Goal: Conquer the final, most scoring chapters with maximum momentum.</p>
+      </div>
+      <div class="bg-white border border-slate-200 rounded-lg overflow-hidden">
+        <div class="overflow-x-auto">
+          <table class="w-full text-left" id="phase3-table">
+            <!-- Table content will be injected here -->
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <section id="rules" class="scroll-mt-16">
+      <div class="mb-8">
+        <h2 class="font-teko text-4xl md:text-5xl font-extrabold">🚨 Non-Negotiable Execution Rules</h2>
+        <p class="max-w-2xl text-slate-600 mt-2">These are not suggestions. They are the laws of this campaign.</p>
+      </div>
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-6" id="rules-container">
+        <!-- Rules will be injected here -->
+      </div>
+    </section>
+  </main>
+</div>
+
+<script>
+  document.addEventListener('DOMContentLoaded', function () {
+    const data = {
+      pillars: [
+        { id: 'p1', title: 'Pillar 1: Mole Concept', source: 'JEE Batch', time: 'Standard (7 Days)', special: false },
+        { id: 'p2', title: 'Pillar 2: Atomic Structure', source: 'JEE Batch', time: 'Standard (7 Days)', special: false },
+        { id: 'p3', title: 'Pillar 3: Periodic Table', source: 'NEET Batch', time: 'Standard (7 Days)', special: false },
+        { id: 'p4', title: 'Pillar 4: Chemical Bonding', source: 'NEET Batch', time: 'Extended Module (10 Days)', special: true },
+        { id: 'p5', title: 'Pillar 5: GOC & Isomerism', source: 'JEE Batch', time: 'Standard (7 Days)', special: false },
+      ],
+      phase2: [
+        { id: 'ph2w1', week: 1, major: 'States of Matter (PC)', minor: 'Hydrogen (IC)' },
+        { id: 'ph2w2_new', week: 2, major: 'Redox Reactions (PC)', minor: '---' },
+        { id: 'ph2w3', week: 3, major: 'Thermodynamics (PC)', majorNote: 'Major is a 9-Day Module', minor: 's-Block Elements (IC)' },
+        { id: 'ph2w4', week: 4, major: 'Hydrocarbons (OC)', minor: 'Environmental Chemistry (IC)' },
+        { id: 'ph2w5', week: 5, major: 'CONSOLIDATION WEEKEND (Fri-Sun)', minor: '', consolidation: true },
+        { id: 'ph2w6', week: 6, major: 'Equilibrium (PC)', majorNote: 'Major is a 10-Day Module', minor: 'Gen. Principles of Isolation (IC)' },
+        { id: 'ph2w7', week: 7, major: 'Haloalkanes & Haloarenes (OC)', minor: 'Solid State (PC)' },
+        { id: 'ph2w8', week: 8, major: 'Alcohols, Phenols & Ethers (OC)', minor: 'p-Block Gp 13 & 14 (IC)', minorNote: 'Minor is part of 9-Day Module' },
+        { id: 'ph2w9', week: 9, major: 'CONSOLIDATION WEEKEND (Fri-Sun)', minor: '', consolidation: true },
+      ],
+      phase3: [
+        { id: 'ph3w1', week: 1, major: 'Electrochemistry (PC)', minor: 'p-Block Gp 15 & 16 (IC)' },
+        { id: 'ph3w2', week: 2, major: 'Chemical Kinetics (PC)', minor: 'p-Block Gp 17 & 18 (IC)' },
+        { id: 'ph3w3', week: 3, major: 'Aldehydes, Ketones & C.Acids (OC)', minor: 'Surface Chemistry (PC)' },
+        { id: 'ph3w5', week: 4, major: 'd & f Block Elements (IC)', minor: 'Polymers (OC)' },
+        { id: 'ph3w6', week: 5, major: 'Coordination Compounds (IC)', minor: 'Biomolecules (OC)' },
+        { id: 'ph3w7', week: 6, major: 'Amines (OC)', minor: 'Chemistry in Everyday Life (OC)' },
+        { id: 'ph3w8', week: 7, major: 'Solutions (PC)', minor: 'Qualitative Analysis (IC)' },
+        { id: 'ph3w9', week: 8, major: 'FINAL REVISION & BUFFER WEEK', minor: '', consolidation: true },
+      ],
+      rules: [
+        { title: '1. Source Protocol', desc: 'Physical & Organic from <span class="font-semibold text-slate-800">JEE Batch</span>. Inorganic from <span class="font-semibold text-slate-800">NEET Batch</span>. This is final.' },
+        { title: '2. Daily Revision (15 Mins)', desc: "Before any new lecture, speed-read yesterday's notes. ALWAYS." },
+        { title: '3. Weekly Consolidation (Sunday)', desc: "No new topics. Revise the week's content, solve PYQs, update Mistake Log." },
+        { title: '4. Minor Chapter Protocol', desc: "Goal is NCERT reading and familiarization. It's a low-intensity raid, not a full assault." },
+      ]
+    };
+
+    const allTasks = [...data.pillars, ...data.phase2, ...data.phase3];
+    const totalTasks = allTasks.length;
+
+    const chartCtx = document.getElementById('progressChart').getContext('2d');
+    const progressChart = new Chart(chartCtx, {
+      type: 'doughnut',
+      data: {
+        labels: ['Completed', 'Remaining'],
+        datasets: [{ data: [0, totalTasks], backgroundColor: ['#2563eb', '#e2e8f0'], borderColor: '#ffffff', borderWidth: 5 }]
+      },
+      options: { responsive: true, maintainAspectRatio: false, cutout: '75%', plugins: { legend: { display: false }, tooltip: { enabled: false } } }
+    });
+
+    const chartCenterText = {
+      id: 'chartCenterText',
+      afterDraw(chart, args, options) {
+        const { ctx, data } = chart;
+        const completed = data.datasets[0].data[0];
+        const percentage = totalTasks > 0 ? Math.round((completed / totalTasks) * 100) : 0;
+        ctx.save();
+        const x = chart.getDatasetMeta(0).data[0].x;
+        const y = chart.getDatasetMeta(0).data[0].y;
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.font = '600 3rem Teko, sans-serif';
+        ctx.fillStyle = '#1e293b';
+        ctx.fillText(`${percentage}%`, x, y - 5);
+        ctx.font = '500 0.8rem Inter, sans-serif';
+        ctx.fillStyle = '#64748b';
+        ctx.fillText(`${completed}/${totalTasks} TASKS`, x, y + 25);
+        ctx.restore();
+      }
+    };
+    Chart.register(chartCenterText);
+
+    function renderPillars() {
+      const container = document.querySelector('#phase1 .space-y-4');
+      container.innerHTML = data.pillars.map((p, index) => `
+            <div class="bg-white p-5 rounded-lg border border-slate-200 flex items-center gap-4 ${p.special ? 'border-blue-500 border-2' : ''}">
+                <div class="text-3xl font-bold text-slate-300">${index + 1}</div>
+                <div class="flex-grow">
+                    <h4 class="font-bold text-lg">${p.title}</h4>
+                    <p class="text-sm text-slate-500 mt-1">${p.source} &bull; ${p.time}</p>
+                </div>
+                <input type="checkbox" class="task-checkbox" data-task-id="${p.id}">
+            </div>
+        `).join('');
+    }
+
+    function renderTable(phaseKey, containerId) {
+      const container = document.getElementById(containerId);
+      const header = `
+            <thead class="bg-slate-50 text-xs text-slate-500 uppercase">
+                <tr>
+                    <th class="px-6 py-3">Week</th>
+                    <th class="px-6 py-3">Major Focus (80% Effort)</th>
+                    <th class="px-6 py-3">Minor Focus (20% Effort)</th>
+                    <th class="px-6 py-3 text-center">Status</th>
+                </tr>
+            </thead>`;
+      const body = `<tbody>${data[phaseKey].map(w => `
+            <tr class="border-t border-slate-200 ${w.consolidation ? 'bg-green-50' : ''}" data-task-id="${w.id}">
+                <td class="px-6 py-4 font-medium">${w.week}</td>
+                ${w.consolidation ? `
+                <td colspan="2" class="px-6 py-4 font-bold text-green-700">${w.major}</td>
+                ` : `
+                <td class="px-6 py-4">
+                    <span class="${w.majorNote ? 'font-bold accent-blue' : ''}">${w.major}</span>
+                    ${w.majorNote ? `<br><span class="text-xs text-slate-500">${w.majorNote}</span>` : ''}
+                </td>
+                <td class="px-6 py-4">
+                    <span class="${w.minorNote ? 'font-bold' : ''}">${w.minor}</span>
+                    ${w.minorNote ? `<br><span class="text-xs text-slate-500">${w.minorNote}</span>` : ''}
+                </td>
+                `}
+                <td class="px-6 py-4 text-center"><input type="checkbox" class="task-checkbox mx-auto" data-task-id="${w.id}"></td>
+            </tr>
+        `).join('')}</tbody>`;
+      container.innerHTML = header + body;
+    }
+
+    function renderRules() {
+      const container = document.getElementById('rules-container');
+      container.innerHTML = data.rules.map(r => `
+            <div class="bg-white p-6 rounded-lg border border-slate-200">
+                <h4 class="font-bold text-lg accent-blue">${r.title}</h4>
+                <p class="mt-2 text-slate-600">${r.desc}</p>
+            </div>
+        `).join('');
+    }
+
+    function updateProgress() {
+      const completedTasks = allTasks.filter(t => localStorage.getItem(t.id) === 'true').length;
+      progressChart.data.datasets[0].data[0] = completedTasks;
+      progressChart.data.datasets[0].data[1] = totalTasks - completedTasks;
+      progressChart.update();
+    }
+
+    function loadState() {
+      allTasks.forEach(task => {
+        const checkbox = document.querySelector(`.task-checkbox[data-task-id="${task.id}"]`);
+        if (checkbox && localStorage.getItem(task.id) === 'true') {
+          checkbox.checked = true;
+        }
+      });
+      updateProgress();
+    }
+
+    function setupEventListeners() {
+      document.body.addEventListener('change', e => {
+        if (e.target.classList.contains('task-checkbox')) {
+          const taskId = e.target.dataset.taskId;
+          if (e.target.checked) {
+            localStorage.setItem(taskId, 'true');
+          } else {
+            localStorage.removeItem(taskId);
+          }
+          updateProgress();
+        }
+      });
+
+      const sections = document.querySelectorAll('main section');
+      const navLinks = document.querySelectorAll('#main-nav a');
+      const contentArea = document.getElementById('content-area');
+
+      const observer = new IntersectionObserver(entries => {
+        entries.forEach(entry => {
+          if (entry.isIntersecting) {
+            navLinks.forEach(link => {
+              link.classList.toggle('active', link.getAttribute('href') === `#${entry.target.id}`);
+            });
+          }
+        });
+      }, { root: contentArea, rootMargin: "-50% 0px -50% 0px", threshold: 0 });
+
+      sections.forEach(section => observer.observe(section));
+    }
+
+    renderPillars();
+    renderTable('phase2', 'phase2-table');
+    renderTable('phase3', 'phase3-table');
+    renderRules();
+    loadState();
+    setupEventListeners();
+  });
+</script>
+</body>
+</html>

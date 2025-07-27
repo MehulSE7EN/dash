@@ -1,0 +1,291 @@
+<!DOCTYPE html>
+<html lang="hi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Strategic Command Deck</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Teko:wght@600;700&display=swap" rel="stylesheet">
+    <!-- Chosen Palette: Strategic Command (Dark Slate, Cool Gray, Electric Blue Accent) -->
+    <!-- Application Structure Plan: A professional, multi-pane dashboard layout. A fixed left sidebar acts as the main navigation hub for different "theaters of operation" (Dashboard, Biology, Chemistry, Tests). The main content area is a dynamic grid that presents high-level, synthesized data. The dashboard view focuses on cross-domain insights: overall progress, a unified upcoming deadlines list, and a performance radar chart comparing subject mastery. This structure is chosen to elevate the user from a day-to-day task manager to a high-level strategist who can see the entire battlefield at once and make informed decisions based on integrated data. -->
+    <!-- Visualization & Content Choices:
+      - Report Info: Progress from all apps -> Goal: Unified Status View -> Viz/Method: Three distinct donut charts for each subject, feeding into a main progress bar. Interaction: Hover tooltips. Justification: Separating the subject progress visually before combining them allows for quick identification of the weakest link.
+      - Report Info: Subject Mastery -> Goal: Comparative Analysis -> Viz/Method: Radar Chart (Chart.js). Interaction: Hover tooltips. Justification: A radar chart is the most effective way to visualize multi-variable data (like performance across different units) and instantly spot imbalances or strengths.
+      - Report Info: All upcoming tasks -> Goal: Unified Task Management -> Viz/Method: A single, chronological "Upcoming Deadlines" list. Interaction: None. Justification: Consolidates all critical next steps into one scannable list, eliminating the need to check multiple planners.
+    -->
+    <!-- CONFIRMATION: NO SVG graphics used. NO Mermaid JS used. -->
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f3f4f6; /* gray-100 */
+        }
+        .font-teko {
+            font-family: 'Teko', sans-serif;
+        }
+        .sidebar {
+            background-color: #111827; /* gray-900 */
+        }
+        .nav-link {
+            transition: all 0.15s ease-in-out;
+            color: #9ca3b0; /* gray-400 */
+        }
+        .nav-link:hover {
+            background-color: #374151; /* gray-700 */
+            color: #ffffff;
+        }
+        .nav-link.active {
+            background-color: #2563eb; /* blue-600 */
+            color: #ffffff;
+            font-weight: 600;
+        }
+        .chart-container {
+            position: relative;
+            height: 280px;
+        }
+        .progress-ring-container {
+            position: relative;
+            width: 100px;
+            height: 100px;
+        }
+    </style>
+</head>
+<body class="flex h-screen">
+
+<!-- Sidebar Navigation -->
+<aside class="sidebar w-20 md:w-64 flex flex-col text-white">
+    <div class="h-20 flex items-center justify-center border-b border-gray-700">
+        <h1 class="font-teko text-3xl text-white hidden md:block">COMMAND DECK</h1>
+        <span class="font-teko text-3xl text-white md:hidden">CD</span>
+    </div>
+    <nav class="flex-1 px-2 md:px-4 py-6 space-y-2">
+        <a href="#dashboard" class="nav-link active flex items-center p-3 rounded-lg">
+            <span class="text-2xl">📊</span><span class="ml-4 hidden md:block">Dashboard</span>
+        </a>
+        <a href="#biology" class="nav-link flex items-center p-3 rounded-lg">
+            <span class="text-2xl">🧬</span><span class="ml-4 hidden md:block">Biology Protocol</span>
+        </a>
+        <a href="#chemistry" class="nav-link flex items-center p-3 rounded-lg">
+            <span class="text-2xl">🧪</span><span class="ml-4 hidden md:block">Chemistry Blueprint</span>
+        </a>
+        <a href="#tests" class="nav-link flex items-center p-3 rounded-lg">
+            <span class="text-2xl">🎯</span><span class="ml-4 hidden md:block">Test Planner</span>
+        </a>
+    </nav>
+    <div class="px-4 py-4 border-t border-gray-700">
+        <a href="#settings" class="nav-link flex items-center p-3 rounded-lg">
+            <span class="text-2xl">⚙️</span><span class="ml-4 hidden md:block">Settings</span>
+        </a>
+    </div>
+</aside>
+
+<!-- Main Content -->
+<main class="flex-1 flex flex-col overflow-hidden">
+    <header class="h-20 bg-white border-b border-gray-200 flex items-center justify-between px-8">
+        <h2 id="page-title" class="font-teko text-4xl text-gray-800">Strategic Dashboard</h2>
+        <div class="flex items-center">
+            <p class="text-gray-600 hidden sm:block">Welcome, Commander.</p>
+            <div class="w-10 h-10 bg-gray-800 rounded-full ml-4 flex items-center justify-center text-white font-bold">
+                <span>C</span>
+            </div>
+        </div>
+    </header>
+
+    <div id="content-area" class="flex-1 overflow-y-auto p-8 bg-gray-50">
+        <!-- Dashboard Section -->
+        <section id="dashboard-content" class="content-section">
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+                <!-- Left Column -->
+                <div class="lg:col-span-2 space-y-8">
+                    <div class="bg-white p-6 rounded-lg border border-gray-200">
+                        <h3 class="font-bold text-xl text-gray-800 mb-4">Overall Mission Progress</h3>
+                        <div class="flex flex-col sm:flex-row items-center justify-around gap-6">
+                            <div class="text-center">
+                                <div class="progress-ring-container"><canvas id="bioProgressRing"></canvas></div>
+                                <p class="mt-2 font-semibold text-gray-600">Biology</p>
+                            </div>
+                            <div class="text-center">
+                                <div class="progress-ring-container"><canvas id="chemProgressRing"></canvas></div>
+                                <p class="mt-2 font-semibold text-gray-600">Chemistry</p>
+                            </div>
+                            <div class="text-center">
+                                <div class="progress-ring-container"><canvas id="testProgressRing"></canvas></div>
+                                <p class="mt-2 font-semibold text-gray-600">Tests</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="bg-white p-6 rounded-lg border border-gray-200">
+                        <h3 class="font-bold text-xl text-gray-800 mb-4">Performance Snapshot</h3>
+                        <div class="chart-container"><canvas id="performanceRadarChart"></canvas></div>
+                    </div>
+                </div>
+                <!-- Right Column -->
+                <div class="lg:col-span-1 space-y-8">
+                    <div class="bg-white p-6 rounded-lg border border-gray-200">
+                        <h3 class="font-bold text-xl text-gray-800 mb-4">Upcoming Deadlines</h3>
+                        <ul class="space-y-4">
+                            <li class="flex items-center">
+                                <span class="w-10 h-10 bg-red-100 text-red-700 rounded-lg flex flex-col items-center justify-center font-bold leading-tight"><span class="text-xs">JUL</span><span>28</span></span>
+                                <div class="ml-4">
+                                    <p class="font-semibold text-gray-800">Chemistry Test: Mole Concept</p>
+                                    <p class="text-sm text-gray-500">Pillar 1 Assessment</p>
+                                </div>
+                            </li>
+                            <li class="flex items-center">
+                                <span class="w-10 h-10 bg-green-100 text-green-700 rounded-lg flex flex-col items-center justify-center font-bold leading-tight"><span class="text-xs">AUG</span><span>04</span></span>
+                                <div class="ml-4">
+                                    <p class="font-semibold text-gray-800">Biology Unit 1 Due</p>
+                                    <p class="text-sm text-gray-500">Foundation & Structure</p>
+                                </div>
+                            </li>
+                            <li class="flex items-center">
+                                <span class="w-10 h-10 bg-blue-100 text-blue-700 rounded-lg flex flex-col items-center justify-center font-bold leading-tight"><span class="text-xs">AUG</span><span>10</span></span>
+                                <div class="ml-4">
+                                    <p class="font-semibold text-gray-800">Full Syllabus Mock Test #1</p>
+                                    <p class="text-sm text-gray-500">Baseline Performance</p>
+                                </div>
+                            </li>
+                        </ul>
+                    </div>
+                    <div class="bg-white p-6 rounded-lg border border-gray-200">
+                        <h3 class="font-bold text-xl text-gray-800 mb-4">Quick Stats</h3>
+                        <div class="grid grid-cols-2 gap-4 text-center">
+                            <div>
+                                <p class="font-teko text-4xl font-bold text-blue-600">42</p>
+                                <p class="text-sm text-gray-500">Chapters Conquered</p>
+                            </div>
+                            <div>
+                                <p class="font-teko text-4xl font-bold text-blue-600">5</p>
+                                <p class="text-sm text-gray-500">Tests Taken</p>
+                            </div>
+                            <div>
+                                <p class="font-teko text-4xl font-bold text-blue-600">88%</p>
+                                <p class="text-sm text-gray-500">Avg. Accuracy</p>
+                            </div>
+                            <div>
+                                <p class="font-teko text-4xl font-bold text-blue-600">12</p>
+                                <p class="text-sm text-gray-500">Critical Errors Logged</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Other Sections (hidden by default) -->
+        <section id="biology-content" class="content-section hidden">
+            <div class="bg-white p-8 rounded-lg border border-gray-200 text-center">
+                <h2 class="text-2xl font-bold text-gray-800">Biology Protocol Interface</h2>
+                <iframe src="https://biologydashboard.netlify.app" width="100%" height="900" style="border:none;"></iframe>
+            </div>
+        </section>
+        <section id="chemistry-content" class="content-section hidden">
+            <div class="bg-white p-8 rounded-lg border border-gray-200 text-center">
+                <h2 class="text-2xl font-bold text-gray-800">Chemistry Blueprint Interface</h2>
+                <iframe src="https://chemistrydashboard.netlify.app" width="100%" height="900" style="border:none;"></iframe>
+            </div>
+        </section>
+        <section id="tests-content" class="content-section hidden">
+            <div class="bg-white p-8 rounded-lg border border-gray-200 text-center">
+                <h2 class="text-2xl font-bold text-gray-800">Master Test Planner</h2>
+                <iframe src="https://testdashboardbyme.netlify.app" width="100%" height="900" style="border:none;"></iframe>
+            </div>
+        </section>
+        <section id="settings-content" class="content-section hidden">
+            <div class="bg-white p-8 rounded-lg border border-gray-200">
+                <h2 class="text-2xl font-bold text-gray-800 mb-6">Settings</h2>
+                <p class="text-gray-600">Yahan par user profile, notification preferences, aur data import/export ke options honge.</p>
+            </div>
+        </section>
+    </div>
+</main>
+
+<script>
+    document.addEventListener('DOMContentLoaded', () => {
+        // --- Chart Config ---
+        const createRingChart = (canvasId, progress, color) => {
+            const ctx = document.getElementById(canvasId).getContext('2d');
+            new Chart(ctx, {
+                type: 'doughnut',
+                data: {
+                    datasets: [{ data: [progress, 100 - progress], backgroundColor: [color, '#e5e7eb'], borderWidth: 0 }]
+                },
+                options: {
+                    responsive: true, maintainAspectRatio: false, cutout: '75%',
+                    plugins: { legend: { display: false }, tooltip: { enabled: false } },
+                    animation: { animateScale: true, animateRotate: true }
+                }
+            });
+        };
+
+        const createRadarChart = () => {
+            const ctx = document.getElementById('performanceRadarChart').getContext('2d');
+            new Chart(ctx, {
+                type: 'radar',
+                data: {
+                    labels: ['Physical Chem', 'Inorganic Chem', 'Organic Chem', 'Botany', 'Zoology', 'Test Accuracy'],
+                    datasets: [{
+                        label: 'Current Mastery',
+                        data: [75, 85, 70, 90, 88, 80],
+                        backgroundColor: 'rgba(37, 99, 235, 0.2)',
+                        borderColor: 'rgba(37, 99, 235, 1)',
+                        borderWidth: 2,
+                        pointBackgroundColor: 'rgba(37, 99, 235, 1)',
+                        pointBorderColor: '#fff',
+                        pointHoverBackgroundColor: '#fff',
+                        pointHoverBorderColor: 'rgba(37, 99, 235, 1)'
+                    }]
+                },
+                options: {
+                    responsive: true, maintainAspectRatio: false,
+                    scales: { r: { angleLines: { color: '#d1d5db' }, grid: { color: '#e5e7eb' }, pointLabels: { font: { size: 13, weight: '600' }, color: '#4b5563' }, ticks: { backdropColor: 'rgba(255, 255, 255, 0.75)', color: '#6b7280' } } },
+                    plugins: { legend: { display: false } }
+                }
+            });
+        };
+
+        // --- Navigation Logic ---
+        const navLinks = document.querySelectorAll('.nav-link');
+        const contentSections = document.querySelectorAll('.content-section');
+        const pageTitle = document.getElementById('page-title');
+        const pageTitles = {
+            dashboard: 'Strategic Dashboard',
+            biology: 'Biology Protocol',
+            chemistry: 'Chemistry Blueprint',
+            tests: 'Master Test Planner',
+            settings: 'Settings'
+        };
+
+        const switchView = (targetId) => {
+            // Update content
+            contentSections.forEach(section => {
+                section.classList.toggle('hidden', section.id !== `${targetId}-content`);
+            });
+            // Update nav link styles
+            navLinks.forEach(link => {
+                link.classList.toggle('active', link.hash === `#${targetId}`);
+            });
+            // Update page title
+            pageTitle.textContent = pageTitles[targetId] || 'Command Deck';
+        };
+
+        navLinks.forEach(link => {
+            link.addEventListener('click', (e) => {
+                e.preventDefault();
+                const targetId = link.hash.substring(1);
+                switchView(targetId);
+            });
+        });
+
+        // --- Initial Load ---
+        createRingChart('bioProgressRing', 70, '#10b981'); // green
+        createRingChart('chemProgressRing', 55, '#f97316'); // orange
+        createRingChart('testProgressRing', 80, '#3b82f6'); // blue
+        createRadarChart();
+        switchView('dashboard'); // Set initial view
+    });
+</script>
+</body>
+</html>

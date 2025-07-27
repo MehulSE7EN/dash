@@ -1,0 +1,325 @@
+<!DOCTYPE html>
+<html lang="hi">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>👑 Biology Protocol v2.0: The War Room 👑</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;900&family=Teko:wght@600;700&display=swap" rel="stylesheet">
+  <!-- Chosen Palette: Warm Neutral Harmony (Re-applied from War Calendar for consistency) -->
+  <!-- Application Structure Plan: A task-oriented "War Room" dashboard for the Biology protocol. The structure mirrors the successful War Calendar app for consistency and ease of use. Key elements: 1) A sticky header with mission-critical stats (progress bar, chapters conquered) for constant motivation. 2) The main navigation uses tabs to represent different "Campaign Fronts" (Units), allowing focus on one area at a time. 3) The content for each unit is displayed as weekly checklist cards. This structure transforms a passive plan into an interactive to-do list, with state persistence via localStorage for tracking progress over time. -->
+  <!-- Visualization & Content Choices: 1) Report Info: Overall Progress -> Goal: Motivate & Track -> Viz/Method: A single, prominent linear progress bar. Interaction: Real-time updates from chapter checkboxes. Justification: A linear bar provides a clear, motivating sense of a journey from 0% to 100%. 2) Report Info: Weekly Chapter Targets -> Goal: Focus & Execute -> Viz/Method: Minimalist cards with granular checklists. Interaction: Checking a chapter updates all progress metrics and saves state. Justification: Chapter-level granularity provides a more accurate and motivating sense of progress than just week-level tracking. -->
+  <!-- CONFIRMATION: NO SVG graphics used. NO Mermaid JS used. -->
+  <style>
+    body {
+      font-family: 'Inter', sans-serif;
+      background-color: #FDFBF8;
+      color: #3D352E;
+    }
+    .font-teko {
+      font-family: 'Teko', sans-serif;
+    }
+    .header-sticky {
+      background-color: rgba(253, 251, 248, 0.8);
+      backdrop-filter: blur(10px);
+    }
+    .progress-bg { background-color: #EAE5DF; }
+    .progress-bar {
+      background-color: #6A8E7F;
+      transition: width 0.5s ease-in-out;
+    }
+    .unit-tab {
+      transition: all 0.2s ease-in-out;
+      border-bottom: 3px solid transparent;
+      color: #6B5F51;
+    }
+    .unit-tab:hover {
+      color: #3D352E;
+    }
+    .unit-tab.active {
+      color: #6A8E7F;
+      border-bottom-color: #6A8E7F;
+      font-weight: 600;
+    }
+    .chapter-checkbox {
+      width: 1.5rem;
+      height: 1.5rem;
+      cursor: pointer;
+      appearance: none;
+      border: 2px solid #D1C7BB;
+      border-radius: 0.375rem;
+      position: relative;
+      transition: all 0.2s ease-in-out;
+      flex-shrink: 0;
+    }
+    .chapter-checkbox:checked {
+      background-color: #6A8E7F;
+      border-color: #6A8E7F;
+    }
+    .chapter-checkbox:checked::after {
+      content: '✔';
+      color: #FDFBF8;
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      font-size: 1rem;
+      font-weight: bold;
+    }
+    .checked-label {
+      text-decoration: line-through;
+      color: #A59481;
+    }
+  </style>
+</head>
+<body class="antialiased">
+
+<header class="header-sticky sticky top-0 z-50 border-b border-gray-200">
+  <div class="container mx-auto px-4 sm:px-6 lg:px-8 py-4">
+    <div class="flex flex-col md:flex-row items-center justify-between gap-4">
+      <div>
+        <h1 class="font-teko text-3xl md:text-4xl font-bold text-green-900">BIOLOGY WAR ROOM</h1>
+        <p class="text-gray-600">Mission Status: Live Execution</p>
+      </div>
+      <div class="w-full md:w-1/2 lg:w-1/3 text-center md:text-right">
+        <div class="flex items-center justify-between mb-1">
+          <span class="text-sm font-bold text-gray-800">Total Victory</span>
+          <span id="total-progress-text" class="text-sm font-bold text-green-800">0%</span>
+        </div>
+        <div class="w-full progress-bg rounded-full h-3 shadow-inner">
+          <div id="total-progress-bar" class="progress-bar h-3 rounded-full"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</header>
+
+<main class="container mx-auto px-4 sm:px-6 lg:px-8 py-8 md:py-10">
+
+  <section id="dashboard" class="bg-white p-6 rounded-xl border border-gray-200 shadow-lg mb-10">
+    <div class="grid grid-cols-2 md:grid-cols-5 gap-y-6 divide-x divide-gray-200">
+      <div class="text-center px-2 col-span-2 md:col-span-1">
+        <p class="text-sm text-gray-500">MISSION END IN</p>
+        <p id="mission-countdown" class="font-teko text-4xl font-extrabold text-amber-700">--:--:--</p>
+      </div>
+      <div class="text-center px-2">
+        <p class="text-sm text-gray-500">CURRENT FRONT</p>
+        <p id="current-unit-display" class="font-teko text-4xl font-extrabold text-green-800">-</p>
+      </div>
+      <div class="text-center px-2">
+        <p class="text-sm text-gray-500">Campaign Fronts</p>
+        <p id="total-units-text" class="font-teko text-4xl font-extrabold text-gray-800">0</p>
+      </div>
+      <div class="text-center px-2">
+        <p class="text-sm text-gray-500">Weekly Targets</p>
+        <p id="total-weeks-text" class="font-teko text-4xl font-extrabold text-gray-800">0</p>
+      </div>
+      <div class="text-center px-2">
+        <p class="text-sm text-gray-500">Chapters Conquered</p>
+        <p id="chapters-conquered-text" class="font-teko text-4xl font-extrabold text-gray-800">0 / 0</p>
+      </div>
+    </div>
+  </section>
+
+  <nav id="unit-navigation" class="flex items-center space-x-4 md:space-x-8 border-b border-gray-200 mb-8 overflow-x-auto pb-1">
+  </nav>
+
+  <section id="weekly-display">
+    <h3 id="weekly-display-header" class="font-teko text-4xl font-bold text-gray-800 mb-6"></h3>
+    <div id="weeks-container" class="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-6">
+    </div>
+  </section>
+
+</main>
+
+<script>
+  document.addEventListener('DOMContentLoaded', function () {
+    const campaignData = [
+      {
+        unitId: 'u1',
+        unitName: 'Foundation & Structure',
+        weeks: [
+          { week: 1, chapters: [{ id: 'c1', name: 'The Living World' }, { id: 'c2', name: 'Biological Classification' }] },
+          { week: 2, chapters: [{ id: 'c3', name: 'Plant Kingdom' }, { id: 'c4', name: 'Animal Kingdom' }] },
+          { week: 3, chapters: [{ id: 'c5', name: 'Morphology of Flowering Plants' }, { id: 'c6', name: 'Anatomy of Flowering Plants' }] },
+          { week: 4, chapters: [{ id: 'c7', name: 'Structural Organisation in Animals' }, { id: 'c8', name: 'Cell: The Unit of Life' }] },
+          { week: 5, chapters: [{ id: 'c9', name: 'Biomolecules' }, { id: 'c10', name: 'Cell Cycle and Cell Division' }] },
+          { week: 6, chapters: [{ id: 'c11', name: 'Transport in Plants & Mineral Nutrition' }, { id: 'c12', name: 'Digestion and Absorption' }] },
+          { week: 7, type: 'consolidation', chapters: [{ id: 'c13', name: 'Revise Units 1 & 2' }, {id: 'c14', name: 'Clear Backlog & PYQ Assault'}] },
+        ]
+      },
+      {
+        unitId: 'u2',
+        unitName: 'Physiology & Core Concepts',
+        weeks: [
+          { week: 8, chapters: [{ id: 'c15', name: 'Breathing and Exchange of Gases' }, { id: 'c16', name: 'Body Fluids and Circulation' }, { id: 'c17', name: 'Excretory Products' }] },
+          { week: 9, chapters: [{ id: 'c18', name: 'Locomotion and Movement' }, { id: 'c19', name: 'Neural Control' }, { id: 'c20', name: 'Chemical Coordination' }] },
+          { week: 10, chapters: [{ id: 'c21', name: 'Photosynthesis' }, { id: 'c22', name: 'Respiration in Plants' }, { id: 'c23', name: 'Plant Growth & Dev.' }] },
+          { week: 11, chapters: [{ id: 'c24', name: 'Reproduction in Organisms' }, { id: 'c25', name: 'Sexual Repro. in Plants' }, { id: 'c26', name: 'Human Reproduction' }] },
+          { week: 12, chapters: [{ id: 'c27', name: 'Reproductive Health' }, { id: 'c28', name: 'Principles of Inheritance' }, { id: 'c29', name: 'Molecular Basis' }] },
+        ]
+      },
+      {
+        unitId: 'u3',
+        unitName: 'The Final Assault',
+        weeks: [
+          { week: 13, chapters: [{ id: 'c30', name: 'Evolution' }, { id: 'c31', name: 'Human Health and Disease' }, { id: 'c32', name: 'Microbes in Human Welfare' }] },
+          { week: 14, chapters: [{ id: 'c33', name: 'Biotechnology: Principles' }, { id: 'c34', name: 'Biotechnology: Applications' }, { id: 'c35', name: 'Strategies for Enhancement' }] },
+        ]
+      },
+      {
+        unitId: 'u4',
+        unitName: '☣️ Ecology Minor Raids',
+        weeks: [
+          { week: 'Nov-Dec', chapters: [{ id: 'c36', name: 'Organisms and Populations' }, { id: 'c37', name: 'Ecosystem' }, { id: 'c38', name: 'Biodiversity and Conservation' }, { id: 'c39', name: 'Environmental Issues' }] },
+        ]
+      }
+    ];
+
+    const unitNavContainer = document.getElementById('unit-navigation');
+    const weeksContainer = document.getElementById('weeks-container');
+    const weeklyDisplayHeader = document.getElementById('weekly-display-header');
+    const totalProgressBar = document.getElementById('total-progress-bar');
+    const totalProgressText = document.getElementById('total-progress-text');
+    const chaptersConqueredText = document.getElementById('chapters-conquered-text');
+    const totalUnitsText = document.getElementById('total-units-text');
+    const totalWeeksText = document.getElementById('total-weeks-text');
+    const missionCountdownEl = document.getElementById('mission-countdown');
+    const currentUnitDisplayEl = document.getElementById('current-unit-display');
+
+    const allChapters = campaignData.flatMap(u => u.weeks.flatMap(w => w.chapters));
+    const totalChapters = allChapters.length;
+
+    function updateProgress() {
+      const completedChapters = allChapters.filter(c => localStorage.getItem(c.id) === 'true').length;
+      const progress = totalChapters > 0 ? (completedChapters / totalChapters) * 100 : 0;
+      totalProgressBar.style.width = `${progress}%`;
+      totalProgressText.textContent = `${Math.round(progress)}%`;
+      chaptersConqueredText.textContent = `${completedChapters} / ${totalChapters}`;
+    }
+
+    function startCountdown() {
+      const missionStartDate = new Date('2025-08-04T00:00:00');
+      function update() {
+        const now = new Date();
+        const diff = missionStartDate - now;
+        if (diff <= 0) {
+          missionCountdownEl.textContent = "ACTIVE";
+          missionCountdownEl.classList.remove('text-amber-700');
+          missionCountdownEl.classList.add('text-red-600');
+          clearInterval(countdownInterval);
+          return;
+        }
+        const days = Math.floor(diff / (1000 * 60 * 60 * 24));
+        const hours = Math.floor((diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+        const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
+        const seconds = Math.floor((diff % (1000 * 60)) / 1000);
+        missionCountdownEl.textContent = `${days}d ${hours}h ${minutes}m ${seconds}s`;
+      }
+      const countdownInterval = setInterval(update, 1000);
+      update();
+    }
+
+    function renderUnitNav() {
+      unitNavContainer.innerHTML = '';
+      campaignData.forEach(unit => {
+        const tab = document.createElement('button');
+        tab.className = 'unit-tab px-2 md:px-4 py-3 text-sm md:text-base font-semibold whitespace-nowrap';
+        tab.dataset.unitId = unit.unitId;
+        tab.textContent = unit.unitName;
+        unitNavContainer.appendChild(tab);
+      });
+      addUnitNavListeners();
+    }
+
+    function renderWeeksForUnit(unitId) {
+      const unit = campaignData.find(u => u.unitId === unitId);
+      if (!unit) return;
+
+      weeklyDisplayHeader.textContent = unit.unitName;
+
+      let displayName = unit.unitName;
+      if (displayName.includes('Ecology')) {
+        displayName = 'Ecology';
+      } else if (displayName.includes('Assault')) {
+        displayName = 'Assault';
+      } else {
+        displayName = displayName.split(' ')[0];
+      }
+      currentUnitDisplayEl.textContent = displayName;
+
+      weeksContainer.innerHTML = '';
+      unit.weeks.forEach(week => {
+        const weekCard = document.createElement('div');
+        weekCard.className = 'bg-white p-6 rounded-xl border border-gray-200 shadow-lg';
+        const weekTitle = week.type === 'consolidation'
+          ? `Week ${week.week} (Consolidation)`
+          : (typeof week.week === 'number' ? `Week ${week.week}` : `Target: ${week.week}`);
+        let chapterChecklistHTML = week.chapters.map(chapter => {
+          const isChecked = localStorage.getItem(chapter.id) === 'true';
+          return `
+            <li class="flex items-center gap-4 py-3">
+                <input type="checkbox" class="chapter-checkbox" data-chapter-id="${chapter.id}" id="${chapter.id}" ${isChecked ? 'checked' : ''}>
+                <label for="${chapter.id}" class="flex-1 text-gray-700 text-lg cursor-pointer ${isChecked ? 'checked-label' : ''}">${chapter.name}</label>
+            </li>
+          `;
+        }).join('');
+        weekCard.innerHTML = `
+            <h4 class="font-teko text-2xl font-bold text-gray-800 border-b border-gray-200 pb-3 mb-3">${weekTitle}</h4>
+            <ul class="divide-y divide-gray-200">${chapterChecklistHTML}</ul>
+        `;
+        weeksContainer.appendChild(weekCard);
+      });
+      addCheckboxListeners();
+    }
+
+    function handleCheckboxChange(e) {
+      const chapterId = e.target.dataset.chapterId;
+      const label = e.target.nextElementSibling;
+      if (e.target.checked) {
+        localStorage.setItem(chapterId, 'true');
+        label.classList.add('checked-label');
+      } else {
+        localStorage.removeItem(chapterId);
+        label.classList.remove('checked-label');
+      }
+      updateProgress();
+    }
+
+    function addCheckboxListeners() {
+      document.querySelectorAll('.chapter-checkbox').forEach(checkbox => {
+        checkbox.addEventListener('change', handleCheckboxChange);
+      });
+    }
+
+    function addUnitNavListeners() {
+      document.querySelectorAll('.unit-tab').forEach(tab => {
+        tab.addEventListener('click', (e) => {
+          e.preventDefault();
+          document.querySelectorAll('.unit-tab').forEach(t => t.classList.remove('active'));
+          tab.classList.add('active');
+          renderWeeksForUnit(tab.dataset.unitId);
+        });
+      });
+    }
+
+    function initialize() {
+      totalUnitsText.textContent = campaignData.length;
+      totalWeeksText.textContent = campaignData.reduce((acc, unit) => acc + unit.weeks.length, 0);
+      renderUnitNav();
+      updateProgress();
+      startCountdown();
+      if (campaignData.length > 0) {
+        const firstUnitId = campaignData[0].unitId;
+        document.querySelector(`.unit-tab[data-unit-id="${firstUnitId}"]`).classList.add('active');
+        renderWeeksForUnit(firstUnitId);
+      }
+    }
+
+    initialize();
+  });
+</script>
+</body>
+</html>

@@ -3,25 +3,25 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Project Chimera: Fortress Command</title>
+    <title>Project Overlord: Fortress Command</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Teko:wght@600;700&display=swap" rel="stylesheet">
-    <!-- Chosen Palette: Project Chimera (Deep Space, Quantum Blue, Neon Magenta) -->
-    <!-- Application Structure Plan: A multi-pane, high-density information dashboard. The UI is designed for strategic overview and rapid decision-making. 1) A top "Global Stats" bar provides an instant pulse of the campaign. 2) The main view is a two-column layout. The left is the "Battlefield," a scrollable list of all active chapters as data-rich cards. The right is the fixed "Command & Control" sidebar. 3) The C&C sidebar contains the most critical component: the "Chimera Engine," which displays the AI-generated next mission, and the "Fortress Hall" for conquered chapters. This structure separates tactical data from strategic directives, providing clarity and empowering the user. -->
-    <!-- Visualization & Content Choices: Report Info: Next Test Syllabus -> Goal: True Intelligence -> Viz/Method: The "Chimera Engine" uses a weighted "Weakness Score" algorithm (avg score, recency, attempts) to identify and rank the top 3 most critical chapters for the next test. This is a true AI advisor. Report Info: Chapter Mastery -> Goal: At-a-Glance Performance -> Viz/Method: Chapter cards feature a 3-stage progress bar, a mini sparkline chart for score history, and clear stats (avg score, attempts). This provides a rich, immediate understanding of each chapter's status. Report Info: Chapter Management -> Goal: Streamlined Workflow -> Viz/Method: A modal-based system for adding chapters and scores, keeping the main interface clean. -->
+    <!-- Chosen Palette: Project Overlord (Military Olive, Gunmetal Gray, Amber Alert) -->
+    <!-- Application Structure Plan: A top-down "War Room" dashboard. The UI is designed to feel like a tactical command center. 1) A fixed "Command Bar" at the top provides global stats and the primary action button. 2) The main content area is split into two zones: "Active Engagements" for chapters currently in the testing cycle, and "Conquered Territories" for Fortress chapters. 3) A dedicated, high-visibility "Overlord Engine" panel displays the AI-generated next mission. This structure mimics a military briefing room, focusing the user on the most critical information first. -->
+    <!-- Visualization & Content Choices: Report Info: Next Test Syllabus -> Goal: Ruthless Intelligence -> Viz/Method: The "Overlord Engine" uses an advanced weighted "Weakness Score" algorithm (avg score, trend, consistency) to identify the 3 most critical chapters. This is a true AI advisor. Report Info: Chapter Mastery -> Goal: Tactical Readout -> Viz/Method: Chapter cards are designed as "dossiers" with a 4-slot score history, progress bar, and key stats (avg, trend). This provides a complete tactical picture of each chapter. Report Info: Limited Data -> Goal: Focus on Recency -> Viz/Method: The data structure now only stores the last 4 scores, automatically creating a rolling window of performance. -->
     <!-- CONFIRMATION: NO SVG graphics used. NO Mermaid JS used. -->
     <style>
         :root {
-            --c-bg: #020617; /* slate-950 */
-            --c-surface: #0f172a; /* slate-900 */
-            --c-border: #1e293b; /* slate-800 */
-            --c-text-primary: #e2e8f0; /* slate-200 */
-            --c-text-secondary: #94a3b8; /* slate-400 */
-            --c-accent-cyan: #22d3ee;
-            --c-accent-magenta: #f472b6;
+            --c-bg: #111827; /* slate-900 */
+            --c-surface: #1f2937; /* slate-800 */
+            --c-border: #374151; /* slate-700 */
+            --c-text-primary: #f9fafb; /* gray-50 */
+            --c-text-secondary: #9ca3af; /* gray-400 */
+            --c-accent-amber: #f59e0b;
+            --c-accent-green: #84cc16; /* lime-500 */
         }
         body {
             font-family: 'Inter', sans-serif;
@@ -29,82 +29,84 @@
             color: var(--c-text-primary);
         }
         .font-teko { font-family: 'Teko', sans-serif; }
-        .progress-bg { background-color: var(--c-border); }
-        .progress-bar { background-color: var(--c-accent-cyan); transition: width 0.5s ease-in-out; }
-        .chimera-card {
-            background: linear-gradient(145deg, rgba(30, 41, 59, 0.4), rgba(15, 23, 42, 0.2));
+        .progress-bg { background-color: rgba(0,0,0,0.2); }
+        .progress-bar { background-color: var(--c-accent-amber); transition: width 0.5s ease-in-out; }
+        .war-card {
+            background-color: var(--c-surface);
             border: 1px solid var(--c-border);
-            backdrop-filter: blur(10px);
+            box-shadow: inset 0px 1px 0px rgba(255,255,255,0.05);
             transition: all 0.2s ease-in-out;
         }
-        .chimera-card:hover {
-            border-color: var(--c-accent-cyan);
-            transform: translateY(-4px);
-        }
-        .modal-backdrop {
-            background-color: rgba(0,0,0,0.7);
-            backdrop-filter: blur(5px);
+        .war-card:hover { border-color: var(--c-accent-amber); }
+        .modal-backdrop { background-color: rgba(0,0,0,0.8); backdrop-filter: blur(5px); }
+        .score-slot {
+            width: 4rem; height: 3rem;
+            display: flex; align-items: center; justify-content: center;
+            background-color: var(--c-bg);
+            border: 1px dashed var(--c-border);
+            font-weight: 600;
         }
     </style>
 </head>
-<body class="h-screen overflow-hidden">
+<body class="min-h-screen">
     <!-- Main Container -->
-    <div class="flex flex-col h-full">
+    <div class="container mx-auto max-w-7xl p-4 md:p-6">
         <!-- Header -->
-        <header class="flex-shrink-0 bg-slate-950/70 backdrop-blur-sm border-b border-slate-800 px-6 py-3 flex justify-between items-center">
-            <h1 class="font-teko text-4xl tracking-widest text-white">PROJECT <span class="text-cyan-400">CHIMERA</span></h1>
-            <div id="global-stats" class="flex gap-6">
-                <!-- Global stats will be injected here -->
-            </div>
+        <header class="border-b-2 border-amber-500/50 pb-4 mb-6">
+            <h1 class="font-teko text-6xl tracking-widest text-white">PROJECT <span class="text-amber-400">OVERLORD</span></h1>
+            <p class="text-slate-400 -mt-2">Chemistry Fortress Protocol // Final Version</p>
         </header>
 
+        <!-- Command Bar -->
+        <div class="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+            <div id="global-stats" class="col-span-2 lg:col-span-3 grid grid-cols-3 gap-4"></div>
+            <button id="add-chapter-btn" class="bg-amber-500 text-slate-900 font-bold h-full rounded-md hover:bg-amber-400 transition text-lg">ACTIVATE CHAPTER</button>
+        </div>
+
         <!-- Main Content -->
-        <div class="flex flex-1 overflow-hidden">
-            <!-- Battlefield (Center) -->
-            <main class="flex-1 p-6 overflow-y-auto">
-                <div class="flex justify-between items-center mb-6">
-                    <h2 class="font-teko text-4xl text-slate-300">🔥 ACTIVE COMBAT ZONE</h2>
-                    <button id="add-chapter-btn" class="bg-cyan-500 text-slate-900 font-bold py-2 px-4 rounded-lg hover:bg-cyan-400 transition">Activate New Chapter</button>
-                </div>
-                <div id="chapters-container" class="grid grid-cols-1 lg:grid-cols-2 2xl:grid-cols-3 gap-6">
-                    <!-- Chapter cards will be injected here -->
-                </div>
+        <div class="flex flex-col lg:flex-row gap-6">
+            <!-- Battlefield (Left) -->
+            <main class="flex-1">
+                <h2 class="font-teko text-4xl text-slate-300 mb-4 border-l-4 border-amber-400 pl-4">ACTIVE ENGAGEMENTS</h2>
+                <div id="chapters-container" class="space-y-4"></div>
             </main>
 
             <!-- Command & Control (Right Sidebar) -->
-            <aside class="w-96 flex-shrink-0 bg-slate-950/70 backdrop-blur-sm border-l border-slate-800 p-6 flex flex-col">
-                <div id="chimera-engine" class="chimera-card p-4 rounded-lg mb-6">
-                    <h3 class="font-teko text-3xl text-cyan-400">CHIMERA ENGINE</h3>
-                    <p class="text-sm text-slate-400 mb-4">AI has analyzed the battlefield. Prioritize these targets.</p>
-                    <div id="next-test-syllabus" class="space-y-2"></div>
+            <aside class="w-full lg:w-96 flex-shrink-0 space-y-6">
+                <div>
+                    <h2 class="font-teko text-4xl text-slate-300 mb-4 border-l-4 border-amber-400 pl-4">OVERLORD ENGINE</h2>
+                    <div id="overlord-engine" class="war-card p-4 rounded-md">
+                        <p class="text-sm text-slate-400 mb-3">AI analysis complete. These are your weakest points. Hunt them down.</p>
+                        <div id="next-test-syllabus" class="space-y-2"></div>
+                    </div>
                 </div>
-                <div id="fortress-hall" class="chimera-card p-4 rounded-lg flex-1 flex flex-col">
-                    <h3 class="font-teko text-3xl text-lime-400">🏛️ FORTRESS HALL</h3>
-                    <div id="fortress-container" class="mt-4 space-y-2 overflow-y-auto flex-1"></div>
+                <div>
+                    <h2 class="font-teko text-4xl text-slate-300 mb-4 border-l-4 border-green-500 pl-4">CONQUERED TERRITORIES</h2>
+                    <div id="fortress-container" class="war-card p-4 rounded-md space-y-2"></div>
                 </div>
             </aside>
         </div>
     </div>
 
     <!-- Modals -->
-    <div id="add-chapter-modal" class="fixed inset-0 modal-backdrop flex items-center justify-center hidden">
-        <div class="chimera-card rounded-lg p-8 w-full max-w-md">
-            <h2 class="font-teko text-3xl mb-4">Activate New Chapter</h2>
-            <select id="chapter-select" class="w-full bg-slate-800 border border-slate-700 rounded-lg p-3 focus:outline-none focus:border-cyan-400 mb-4"></select>
+    <div id="add-chapter-modal" class="fixed inset-0 modal-backdrop flex items-center justify-center hidden z-50">
+        <div class="war-card rounded-lg p-8 w-full max-w-md border-amber-400">
+            <h2 class="font-teko text-3xl mb-4">Activate New Engagement</h2>
+            <select id="chapter-select" class="w-full bg-slate-800 border border-slate-700 rounded-md p-3 focus:outline-none focus:border-amber-400 mb-4"></select>
             <div class="flex gap-4">
-                <button id="modal-cancel-btn" class="w-full bg-slate-700 hover:bg-slate-600 font-bold py-3 rounded-lg">Cancel</button>
-                <button id="modal-activate-btn" class="w-full bg-cyan-500 hover:bg-cyan-400 text-slate-900 font-bold py-3 rounded-lg">Activate</button>
+                <button id="modal-cancel-btn" class="w-full bg-slate-700 hover:bg-slate-600 font-bold py-3 rounded-md">Cancel</button>
+                <button id="modal-activate-btn" class="w-full bg-amber-500 hover:bg-amber-400 text-slate-900 font-bold py-3 rounded-md">Activate</button>
             </div>
         </div>
     </div>
     
-    <div id="add-score-modal" class="fixed inset-0 modal-backdrop flex items-center justify-center hidden">
-        <div class="chimera-card rounded-lg p-8 w-full max-w-md">
-            <h2 id="score-modal-title" class="font-teko text-3xl mb-4">Add Score</h2>
-            <input type="number" id="score-input-field" min="0" max="100" class="w-full text-center text-2xl font-bold bg-slate-800 border border-slate-700 rounded-lg p-3 focus:outline-none focus:border-cyan-400 mb-4" placeholder="Enter % Score">
+    <div id="add-score-modal" class="fixed inset-0 modal-backdrop flex items-center justify-center hidden z-50">
+        <div class="war-card rounded-lg p-8 w-full max-w-md border-amber-400">
+            <h2 id="score-modal-title" class="font-teko text-3xl mb-4">Log Test Data</h2>
+            <input type="number" id="score-input-field" min="0" max="100" class="w-full text-center text-3xl font-bold bg-slate-900 border border-slate-700 rounded-md p-3 focus:outline-none focus:border-amber-400 mb-4" placeholder="%">
             <div class="flex gap-4">
-                <button id="score-modal-cancel-btn" class="w-full bg-slate-700 hover:bg-slate-600 font-bold py-3 rounded-lg">Cancel</button>
-                <button id="score-modal-submit-btn" class="w-full bg-cyan-500 hover:bg-cyan-400 text-slate-900 font-bold py-3 rounded-lg">Submit Score</button>
+                <button id="score-modal-cancel-btn" class="w-full bg-slate-700 hover:bg-slate-600 font-bold py-3 rounded-md">Cancel</button>
+                <button id="score-modal-submit-btn" class="w-full bg-amber-500 hover:bg-amber-400 text-slate-900 font-bold py-3 rounded-md">Log Score</button>
             </div>
         </div>
     </div>
@@ -113,19 +115,18 @@
 document.addEventListener('DOMContentLoaded', () => {
     const initialChapters = [
         'Some Basic Concepts', 'Structure of Atom', 'States of Matter', 'Thermodynamics', 'Equilibrium', 'Redox Reactions', 'Solid State', 'Solutions', 'Electrochemistry', 'Chemical Kinetics', 'Surface Chemistry', 'Periodic Table', 'Chemical Bonding', 'Hydrogen', 's-Block Elements', 'p-Block (13-14)', 'p-Block (15-18)', 'd & f Block', 'Coordination Compounds', 'Metallurgy', 'GOC & Hydrocarbons', 'Environmental Chemistry', 'Haloalkanes & Haloarenes', 'Alcohols, Phenols & Ethers', 'Aldehydes, Ketones & Acids', 'Amines', 'Biomolecules', 'Polymers', 'Chemistry in Everyday Life'
-    ].map((name, index) => ({ id: `c${index + 1}`, name, status: 'locked', scores: [], lastTested: null }));
+    ].map((name, index) => ({ id: `c${index + 1}`, name, status: 'locked', scores: [] }));
 
-    let chapterData = JSON.parse(localStorage.getItem('chimeraV2Data')) || initialChapters;
+    let chapterData = JSON.parse(localStorage.getItem('overlordDataV1')) || initialChapters;
     let currentlyScoringChapterId = null;
 
-    // DOM Elements
     const elements = {
+        main: document.querySelector('main'),
         chaptersContainer: document.getElementById('chapters-container'),
         nextTestSyllabus: document.getElementById('next-test-syllabus'),
         fortressContainer: document.getElementById('fortress-container'),
         chapterSelect: document.getElementById('chapter-select'),
         globalStats: document.getElementById('global-stats'),
-        // Modals
         addChapterModal: document.getElementById('add-chapter-modal'),
         addChapterBtn: document.getElementById('add-chapter-btn'),
         modalActivateBtn: document.getElementById('modal-activate-btn'),
@@ -138,23 +139,26 @@ document.addEventListener('DOMContentLoaded', () => {
     };
 
     function saveData() {
-        localStorage.setItem('chimeraV2Data', JSON.stringify(chapterData));
+        localStorage.setItem('overlordDataV1', JSON.stringify(chapterData));
     }
 
-    // --- Core AI Logic ---
+    // --- Core Overlord AI Logic ---
     function calculateWeaknessScore(chapter) {
-        if (chapter.status !== 'active') return -1;
+        if (chapter.status !== 'active' || chapter.scores.length === 0) return 0;
 
-        const avgScore = chapter.scores.length ? chapter.scores.reduce((a, b) => a + b, 0) / chapter.scores.length : 0;
-        const weight_avg = 1.5; // Lower score is a bigger weakness
+        const recentScores = chapter.scores.slice(-3);
+        const avgScore = recentScores.reduce((a, b) => a + b, 0) / recentScores.length;
+        
+        let trend = 0;
+        if (recentScores.length > 1) {
+            trend = recentScores[recentScores.length - 1] - recentScores[0];
+        }
 
-        const recency = chapter.lastTested ? (Date.now() - chapter.lastTested) / (1000 * 60 * 60 * 24) : 0; // Days since last test
-        const weight_recency = 0.5; // Older test is a weakness
+        const mean = avgScore;
+        const stdDev = Math.sqrt(recentScores.map(x => Math.pow(x - mean, 2)).reduce((a, b) => a + b, 0) / recentScores.length);
+        const consistencyPenalty = stdDev;
 
-        const attempts = chapter.scores.length;
-        const weight_attempts = 1; // Fewer attempts is a weakness
-
-        const weakness = ((100 - avgScore) * weight_avg) + (recency * weight_recency) + ((5 - attempts > 0 ? 5 - attempts : 0) * weight_attempts);
+        const weakness = ((100 - avgScore) * 1.5) - (trend * 0.5) + (consistencyPenalty * 1.0);
         return weakness;
     }
 
@@ -170,16 +174,16 @@ document.addEventListener('DOMContentLoaded', () => {
     
     // --- Rendering Logic ---
     function render() {
-        // Clear containers
         elements.chaptersContainer.innerHTML = '';
         elements.fortressContainer.innerHTML = '';
-        elements.chapterSelect.innerHTML = '<option value="">Activate a New Chapter...</option>';
+        elements.chapterSelect.innerHTML = '<option value="">Select Chapter to Activate...</option>';
         
         let activeCount = 0, fortressCount = 0;
 
         chapterData.forEach(chapter => {
-            if (chapter.scores.length >= 3 && chapter.scores.slice(-3).every(s => s >= 90)) {
-                chapter.status = 'fortress';
+            const last3Scores = chapter.scores.slice(-3);
+            if (last3Scores.length === 3 && last3Scores.every(s => s >= 90)) {
+                 chapter.status = 'fortress';
             } else if (chapter.status !== 'locked') {
                 chapter.status = 'active';
             }
@@ -198,8 +202,8 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         });
 
-        if (activeCount === 0) elements.chaptersContainer.innerHTML = '<p class="text-slate-500 text-center col-span-full">No active battles. Activate a chapter.</p>';
-        if (fortressCount === 0) elements.fortressContainer.innerHTML = '<p class="text-slate-500 text-center">No fortresses built yet.</p>';
+        if (activeCount === 0) elements.chaptersContainer.innerHTML = '<p class="text-slate-500 text-center col-span-full py-10">No active engagements. Activate a chapter from the command bar.</p>';
+        if (fortressCount === 0) elements.fortressContainer.innerHTML = '<p class="text-slate-500 text-center text-sm">No territories conquered yet.</p>';
 
         renderGlobalStats(chapterData.length, activeCount, fortressCount);
         renderNextTestSyllabus();
@@ -208,9 +212,9 @@ document.addEventListener('DOMContentLoaded', () => {
 
     function renderGlobalStats(total, active, fortresses) {
         elements.globalStats.innerHTML = `
-            <div class="text-center"><p class="font-teko text-3xl">${total}</p><p class="text-xs text-slate-400">Total Chapters</p></div>
-            <div class="text-center"><p class="font-teko text-3xl text-yellow-300">${active}</p><p class="text-xs text-slate-400">Active Battles</p></div>
-            <div class="text-center"><p class="font-teko text-3xl text-lime-400">${fortresses}</p><p class="text-xs text-slate-400">Fortresses</p></div>
+            <div class="war-card rounded-md p-3 text-center"><p class="font-teko text-4xl">${total}</p><p class="text-xs text-slate-400">Total Chapters</p></div>
+            <div class="war-card rounded-md p-3 text-center"><p class="font-teko text-4xl text-amber-400">${active}</p><p class="text-xs text-slate-400">Active Engagements</p></div>
+            <div class="war-card rounded-md p-3 text-center"><p class="font-teko text-4xl text-green-400">${fortresses}</p><p class="text-xs text-slate-400">Conquered</p></div>
         `;
     }
 
@@ -218,79 +222,62 @@ document.addEventListener('DOMContentLoaded', () => {
         const syllabus = getNextMissionSyllabus();
         elements.nextTestSyllabus.innerHTML = '';
         if (syllabus.length === 0) {
-            elements.nextTestSyllabus.innerHTML = '<p class="text-sm text-slate-500">Activate up to 3 chapters to generate a mission.</p>';
+            elements.nextTestSyllabus.innerHTML = '<p class="text-sm text-slate-500">Activate chapters and log scores to generate mission.</p>';
             return;
         }
-        const roles = ['🎯 Spearhead', '🛡️ Support', '🔭 Long-Range'];
+        const roles = ['🎯 Primary Target', '🛡️ Secondary Target', '🔭 Tertiary Target'];
         syllabus.forEach((chapter, index) => {
             elements.nextTestSyllabus.innerHTML += `
-                <div class="bg-slate-900/70 p-3 rounded-lg border-l-4 border-cyan-400">
+                <div class="bg-slate-900/70 p-3 rounded-md border-l-4 border-amber-400">
                     <p class="font-semibold text-slate-200">${chapter.name}</p>
-                    <p class="text-xs font-bold text-cyan-400">${roles[index]}</p>
+                    <p class="text-xs font-bold text-amber-400">${roles[index]}</p>
                 </div>
             `;
         });
     }
 
     function renderChapterCard(chapter) {
+        const last4Scores = chapter.scores.slice(-4);
         const fortressProgress = chapter.scores.slice(-3).filter(s => s >= 90).length;
         const progressPercentage = (fortressProgress / 3) * 100;
         const avgScore = chapter.scores.length ? (chapter.scores.reduce((a, b) => a + b, 0) / chapter.scores.length).toFixed(1) : 'N/A';
+        
+        let trendIndicator = '';
+        if (last4Scores.length > 1) {
+            const trend = last4Scores[last4Scores.length - 1] - last4Scores[0];
+            if (trend > 5) trendIndicator = '<span class="text-green-400">▲ Improving</span>';
+            else if (trend < -5) trendIndicator = '<span class="text-red-400">▼ Declining</span>';
+            else trendIndicator = '<span class="text-slate-400">▬ Stable</span>';
+        }
 
         return `
-            <div class="chimera-card p-5 rounded-lg">
-                <div class="flex justify-between items-start mb-4">
-                    <h3 class="font-bold text-xl text-slate-200 pr-2">${chapter.name}</h3>
-                    <button class="add-score-btn text-2xl font-bold text-cyan-400 hover:text-cyan-300" data-id="${chapter.id}">+</button>
+            <div class="war-card rounded-lg p-5">
+                <div class="flex justify-between items-start mb-3">
+                    <h3 class="font-teko text-3xl text-slate-200 pr-2">${chapter.name}</h3>
+                    <button class="add-score-btn text-3xl font-bold text-amber-400 hover:text-amber-300" data-id="${chapter.id}">+</button>
+                </div>
+                <div class="flex gap-2 mb-4">
+                    ${Array(4).fill(0).map((_, i) => `<div class="score-slot rounded-md text-lg ${last4Scores[i] ? (last4Scores[i] >= 90 ? 'text-green-400' : 'text-amber-400') : 'text-slate-600'}">${last4Scores[i] || '-'}</div>`).join('')}
                 </div>
                 <div class="grid grid-cols-2 gap-4 text-sm mb-4">
                     <div><span class="text-slate-400">Avg Score:</span> <span class="font-bold text-white">${avgScore}%</span></div>
-                    <div><span class="text-slate-400">Attempts:</span> <span class="font-bold text-white">${chapter.scores.length}</span></div>
+                    <div><span class="text-slate-400">Trend:</span> <span class="font-bold">${trendIndicator}</span></div>
                 </div>
                 <div class="w-full progress-bg rounded-full h-2 mb-1">
                     <div class="progress-bar h-2 rounded-full" style="width: ${progressPercentage}%"></div>
                 </div>
                 <p class="text-xs text-slate-400">Fortress Progress (${fortressProgress}/3)</p>
-                <div class="mt-3 h-10 w-full">
-                    <canvas class="sparkline-chart" data-scores="${chapter.scores.join(',')}"></canvas>
-                </div>
             </div>
         `;
     }
     
     function renderFortressCard(chapter){
-        return `<div class="bg-slate-800/30 p-2 rounded flex items-center gap-2 text-sm"><span class="text-lime-400">🏰</span><span class="font-semibold text-slate-300">${chapter.name}</span></div>`;
-    }
-
-    function renderSparklines() {
-        document.querySelectorAll('.sparkline-chart').forEach(canvas => {
-            const scores = canvas.dataset.scores.split(',').map(s => Number(s)).filter(s => !isNaN(s));
-            if (scores.length < 2) return;
-            new Chart(canvas.getContext('2d'), {
-                type: 'line',
-                data: {
-                    labels: Array(scores.length).fill(''),
-                    datasets: [{
-                        data: scores,
-                        borderColor: '#94a3b8',
-                        borderWidth: 2,
-                        tension: 0.4,
-                        pointRadius: 0
-                    }]
-                },
-                options: {
-                    responsive: true, maintainAspectRatio: false,
-                    scales: { x: { display: false }, y: { display: false, min: 0, max: 100 } },
-                    plugins: { legend: { display: false }, tooltip: { enabled: false } }
-                }
-            });
-        });
+        return `<div class="war-card p-3 rounded-md flex items-center gap-3 text-sm border-green-500/50"><span class="text-green-400">🏰</span><span class="font-semibold text-slate-300">${chapter.name}</span></div>`;
     }
 
     // --- Event Listeners ---
     function toggleModal(modal, show) {
-        if (show) modal.classList.remove('hidden');
-        else modal.classList.add('hidden');
+        modal.classList.toggle('hidden', !show);
     }
 
     elements.addChapterBtn.addEventListener('click', () => toggleModal(elements.addChapterModal, true));
@@ -300,17 +287,16 @@ document.addEventListener('DOMContentLoaded', () => {
         if (!selectedId) return;
         const chapter = chapterData.find(c => c.id === selectedId);
         chapter.status = 'active';
-        chapter.activationTime = Date.now();
         toggleModal(elements.addChapterModal, false);
         render();
-        renderSparklines();
     });
 
-    elements.chaptersContainer.addEventListener('click', e => {
-        if (e.target.classList.contains('add-score-btn')) {
-            currentlyScoringChapterId = e.target.dataset.id;
+    elements.main.addEventListener('click', e => {
+        const addScoreBtn = e.target.closest('.add-score-btn');
+        if (addScoreBtn) {
+            currentlyScoringChapterId = addScoreBtn.dataset.id;
             const chapter = chapterData.find(c => c.id === currentlyScoringChapterId);
-            elements.scoreModalTitle.textContent = `Add Score for ${chapter.name}`;
+            elements.scoreModalTitle.textContent = `Log Data: ${chapter.name}`;
             elements.scoreInputField.value = '';
             toggleModal(elements.addScoreModal, true);
             elements.scoreInputField.focus();
@@ -323,16 +309,16 @@ document.addEventListener('DOMContentLoaded', () => {
         if (currentlyScoringChapterId && !isNaN(score) && score >= 0 && score <= 100) {
             const chapter = chapterData.find(c => c.id === currentlyScoringChapterId);
             chapter.scores.push(score);
-            chapter.lastTested = Date.now();
+            if (chapter.scores.length > 4) {
+                chapter.scores.shift(); // Keep only the last 4 scores
+            }
             toggleModal(elements.addScoreModal, false);
             render();
-            renderSparklines();
         }
     });
     
     // Initial render
     render();
-    renderSparklines();
 });
 </script>
 </body>

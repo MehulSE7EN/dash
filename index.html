@@ -269,7 +269,7 @@ document.addEventListener('DOMContentLoaded', () => {
             link.classList.toggle('active', link.hash === `#${targetId}`);
         });
         // Update page title
-        pageTitle.textContent = pageTitles[targetId] || 'Command Deck';
+        pageTitle.textContent = pageTitles[targetId] || '';
     };
 
     navLinks.forEach(link => {

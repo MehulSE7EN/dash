@@ -3,188 +3,169 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Physics: The Sprint Tracker</title>
+    <title>Project Decimation: Command Console</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Teko:wght@600;700&display=swap" rel="stylesheet">
-    <!-- Chosen Palette: Electric Citadel (Indigo, Gray, Lime/Yellow Accent) -->
-    <!-- Application Structure Plan: A vertical timeline or "Gantt chart" style SPA. This structure is chosen because the source report is a time-sensitive, sequential sprint plan. The timeline visually represents the march of time towards the deadline, with each day as a distinct step. It emphasizes sequence and urgency, which is perfect for a "sprint". Key interactions include daily task checklists that update a master progress bar and a live countdown to the test date. -->
-    <!-- Visualization & Content Choices: Report Info: Daily schedule -> Goal: Actionable daily tasks -> Viz/Method: Timeline cards with checkboxes. Interaction: Checking tasks updates progress. Justification: Cards break down the plan into manageable daily chunks. Report Info: Standard vs. Assault Days -> Goal: Differentiate daily intensity -> Viz/Method: Distinct visual styling (color-coding) for Assault/Standard day cards. Justification: Allows the user to mentally prepare for the day's workload at a glance. Report Info: Overall Progress -> Goal: Motivate -> Viz/Method: A prominent linear progress bar and countdown timer. Justification: Creates a sense of urgency and visualizes progress towards the goal. -->
+    <!-- Chosen Palette: Nuclear Dawn (Deep Charcoal, Hazard Yellow, Crimson Red Alert) -->
+    <!-- Application Structure Plan: A top-down, single-page "Command Console" designed for a high-stakes military campaign. The structure is a vertical timeline, emphasizing the relentless march towards the deadline. 1) A sticky "Heads-Up Display" (HUD) at the top provides persistent, mission-critical data (progress, countdown). 2) The main content area is the "Mission Log," a chronological sequence of phase directives and daily dossiers. This structure was chosen to create a narrative flow and a sense of an unfolding operation, turning a static plan into an active mission. -->
+    <!-- Visualization & Content Choices: Report Info: Daily schedule -> Goal: Actionable daily tasks -> Viz/Method: "Daily Dossier" cards with interactive checklists. Interaction: Checking tasks updates the HUD in real-time. Justification: This gamifies daily execution and provides immediate feedback. Report Info: Plan Phases -> Goal: Create Structure -> Viz/Method: Large, distinct "Phase Directive" headers. Justification: Clearly delineates major shifts in the campaign's strategy. Report Info: Overall Progress -> Goal: Maintain Urgency -> Viz/Method: A high-visibility progress bar and a "Time to Target" countdown in the sticky HUD. Justification: These elements are constant reminders of the mission's status and deadline, fostering discipline. -->
     <!-- CONFIRMATION: NO SVG graphics used. NO Mermaid JS used. -->
     <style>
         body {
             font-family: 'Inter', sans-serif;
-            background-color: #1e293b; /* slate-800 */
-            color: #e2e8f0; /* slate-200 */
+            background-color: #111827; /* slate-900 */
+            color: #e5e7eb; /* gray-200 */
         }
-        .font-teko {
-            font-family: 'Teko', sans-serif;
-        }
-        .accent-lime { color: #a3e635; }
-        .bg-lime { background-color: #a3e635; }
-        .border-lime { border-color: #a3e635; }
-        .progress-bg { background-color: #334155; }
+        .font-teko { font-family: 'Teko', sans-serif; }
+        .accent-yellow { color: #facc15; } /* yellow-400 */
+        .progress-bg { background-color: rgba(0,0,0,0.4); border: 1px solid #374151; }
         .progress-bar {
-            background-color: #a3e635;
+            background: linear-gradient(90deg, #facc15, #f59e0b);
             transition: width 0.5s ease-in-out;
         }
         .timeline-item::before {
             content: '';
             position: absolute;
-            left: 19px;
+            left: 1.25rem;
             top: 0;
             width: 2px;
             height: 100%;
-            background-color: #475569; /* slate-600 */
+            background-image: linear-gradient(to bottom, #4b5563 50%, transparent 50%);
+            background-size: 1px 10px;
         }
         .timeline-marker {
             position: absolute;
-            left: 10px;
+            left: 0.75rem;
             top: 1.25rem;
-            width: 20px;
-            height: 20px;
-            border-radius: 50%;
-            border: 3px solid #475569; /* slate-600 */
-            background-color: #1e293b; /* slate-800 */
-            z-index: 10;
-        }
-        .timeline-item:last-child::before {
-            display: none;
-        }
-        .task-checkbox {
             width: 1.25rem;
             height: 1.25rem;
-            cursor: pointer;
-            appearance: none;
-            border: 2px solid #64748b; /* slate-500 */
+            border-radius: 50%;
+            border: 2px solid #4b5563; /* gray-600 */
+            background-color: #111827;
+            z-index: 10;
+        }
+        .timeline-item:last-child::before { display: none; }
+        .task-checkbox {
+            width: 1.5rem; height: 1.5rem;
+            cursor: pointer; appearance: none;
+            border: 2px solid #4b5563;
             border-radius: 0.25rem;
             position: relative;
             transition: all 0.2s ease-in-out;
             flex-shrink: 0;
         }
         .task-checkbox:checked {
-            background-color: #a3e635;
-            border-color: #a3e635;
+            background-color: #facc15;
+            border-color: #facc15;
         }
         .task-checkbox:checked::after {
-            content: '✔';
-            color: #1e293b;
+            content: '✓';
+            color: #111827;
             position: absolute;
-            top: 50%;
-            left: 50%;
+            top: 50%; left: 50%;
             transform: translate(-50%, -50%);
-            font-size: 0.8rem;
-            font-weight: bold;
+            font-size: 1rem; font-weight: bold;
         }
         .checked-label {
             text-decoration: line-through;
-            color: #64748b; /* slate-500 */
+            color: #6b7280; /* gray-500 */
+        }
+        .phase-header {
+            background: linear-gradient(90deg, rgba(239, 68, 68, 0.2), transparent);
+            border-left: 4px solid #ef4444; /* red-500 */
         }
     </style>
 </head>
 <body>
-    <div class="container mx-auto max-w-4xl p-4 md:p-8">
+    <div class="container mx-auto max-w-4xl p-4 md:p-6">
         <header class="text-center mb-8">
-            <h1 class="font-teko text-6xl md:text-7xl font-bold tracking-wider accent-lime">PHYSICS SPRINT TRACKER</h1>
-            <p class="text-lg text-slate-400">Mission: 27th August Test Domination</p>
+            <h1 class="font-teko text-6xl md:text-8xl font-bold tracking-wider text-white">PROJECT <span class="accent-yellow">DECIMATION</span></h1>
+            <p class="text-lg text-slate-400">Physics Surgical Strike: Command Console</p>
         </header>
 
-        <div class="bg-slate-900 p-6 rounded-xl border border-slate-700 shadow-2xl mb-10 sticky top-4 z-20">
+        <div class="bg-slate-900/70 backdrop-blur-sm p-4 rounded-xl border border-slate-700 shadow-2xl mb-10 sticky top-4 z-20">
             <div class="flex flex-col md:flex-row items-center justify-between gap-4">
-                <div class="w-full md:w-1/2">
+                <div class="w-full md:w-2/3">
                     <div class="flex justify-between items-center mb-1">
-                        <span class="text-sm font-semibold">Mission Progress</span>
-                        <span id="progress-text" class="text-sm font-bold accent-lime">0%</span>
+                        <span class="text-sm font-semibold">MISSION PROGRESS</span>
+                        <span id="progress-text" class="text-sm font-bold accent-yellow">0%</span>
                     </div>
-                    <div class="w-full progress-bg rounded-full h-4 shadow-inner">
-                        <div id="progress-bar" class="progress-bar h-4 rounded-full flex items-center justify-center">
-                            <span id="progress-bar-text" class="text-xs font-bold text-slate-800"></span>
-                        </div>
+                    <div class="w-full progress-bg rounded-full h-5 shadow-inner p-1">
+                        <div id="progress-bar" class="progress-bar h-full rounded-full flex items-center justify-center"></div>
                     </div>
                 </div>
-                <div class="text-center">
-                    <p class="text-sm font-semibold text-slate-400">TIME TO TARGET</p>
-                    <p id="countdown" class="font-teko text-4xl font-bold text-white">--d --h --m --s</p>
+                <div class="text-center bg-red-900/50 border border-red-700 p-2 rounded-lg">
+                    <p class="text-xs font-semibold text-red-300">TIME TO JUDGEMENT DAY</p>
+                    <p id="countdown" class="font-teko text-3xl font-bold text-white">--d --h --m --s</p>
                 </div>
             </div>
         </div>
 
         <div id="timeline-container" class="relative">
-            <!-- Timeline items will be injected here -->
+            <!-- Timeline items will be injected here by JS -->
         </div>
     </div>
 
 <script>
 document.addEventListener('DOMContentLoaded', () => {
-    const timelineData = [
-        { phase: 'Phase 1: MSL Blitz (User-Approved Assault)' },
-        { date: 'Aug 6 (Wed)', type: 'Assault Day', tasks: [{id: 't1', text: 'MSL Lec 1'}] }, 
-        { date: 'Aug 7 (Wed)', type: 'Assault Day', tasks: [{id: 't1', text: 'MSL Lec 2'}, {id: 't2', text: 'MSL Lec 3'}] },
-        { date: 'Aug 8 (Thu)', type: 'Assault Day', tasks: [{id: 't3', text: 'MSL Lec 4'}, {id: 't4', text: 'MSL Lec 5'}] },
-        { date: 'Aug 9 (Fri)', type: 'Assault Day', tasks: [{id: 't5', text: 'MSL Lec 6'}, {id: 't6', text: 'MSL Lec 7'}] },
-        { date: 'Aug 10 (Sat)', type: 'Assault Day', tasks: [{id: 't7', text: 'MSL Lec 8'}, {id: 't8', text: 'MSL Lec 9'}], milestone: 'MSL COMPLETE ✅' },
-        { phase: 'Phase 2: The Main Campaign (MIP & NLM)' },
-        { date: 'Aug 11 (Sun)', type: 'Strategic Sunday', tasks: [{id: 't9', text: 'Full MSL Revision'}, {id: 't10', text: '75 PYQs'}] },
-        { date: 'Aug 12 (Mon)', type: 'Standard Day', tasks: [{id: 't11', text: 'MIP Lec 1'}, {id: 't12', text: 'Practice Block (40 Qs)'}] },
-        { date: 'Aug 13 (Tue)', type: 'Standard Day', tasks: [{id: 't13', text: 'MIP Lec 2'}, {id: 't14', text: 'Practice Block (40 Qs)'}] },
-        { date: 'Aug 14 (Wed)', type: 'Assault Day', tasks: [{id: 't15', text: 'MIP Lec 3'}, {id: 't16', text: 'MIP Lec 4'}] },
-        { date: 'Aug 15 (Thu)', type: 'Standard Day', tasks: [{id: 't17', text: 'MIP Lec 5'}, {id: 't18', text: 'Practice Block (40 Qs)'}] },
-        { date: 'Aug 16 (Fri)', type: 'Assault Day', tasks: [{id: 't19', text: 'MIP Lec 6'}, {id: 't20', text: 'MIP Lec 7'}] },
-        { date: 'Aug 17 (Sat)', type: 'Standard Day', tasks: [{id: 't21', text: 'MIP Lec 8'}, {id: 't22', text: 'Practice Block (40 Qs)'}] },
-        { date: 'Aug 18 (Sun)', type: 'Strategic Sunday', tasks: [{id: 't23', text: 'MIP Partial Revision (Lec 1-8)'}, {id: 't24', text: 'PYQs'}] },
-        { date: 'Aug 19 (Mon)', type: 'Assault Day', tasks: [{id: 't25', text: 'MIP Lec 9'}, {id: 't26', text: 'NLM Lec 1'}], milestone: 'MIP COMPLETE ✅' },
-        { date: 'Aug 20 (Tue)', type: 'Standard Day', tasks: [{id: 't27', text: 'NLM Lec 2'}, {id: 't28', text: 'Practice Block (50 Qs)'}] },
-        { date: 'Aug 21 (Wed)', type: 'Assault Day', tasks: [{id: 't29', text: 'NLM Lec 3'}, {id: 't30', text: 'NLM Lec 4'}] },
-        { date: 'Aug 22 (Thu)', type: 'Standard Day', tasks: [{id: 't31', text: 'NLM Lec 5'}, {id: 't32', text: 'Practice Block (50 Qs)'}] },
-        { date: 'Aug 23 (Fri)', type: 'Assault Day', tasks: [{id: 't33', text: 'NLM Lec 6'}, {id: 't34', text: 'NLM Lec 7'}] },
-        { date: 'Aug 24 (Sat)', type: 'Standard Day', tasks: [{id: 't35', text: 'NLM Lec 8'}, {id: 't36', text: 'Practice Block (50 Qs)'}] },
-        { date: 'Aug 25 (Sun)', type: 'Strategic Sunday', tasks: [{id: 't37', text: 'Full MIP & Partial NLM Revision'}, {id: 't38', text: 'Mixed PYQs'}] },
-        { date: 'Aug 26 (Mon)', type: 'Assault Day', tasks: [{id: 't39', text: 'NLM Lec 9'}, {id: 't40', text: 'NLM Lec 10'}] },
-        { date: 'Aug 27 (Tue)', type: 'Standard Day', tasks: [{id: 't41', text: 'NLM Lec 11'}], milestone: 'NLM COMPLETE. SYLLABUS CONQUERED. ✅' },
-        { phase: 'Phase 3: Final Strike' },
-        { date: 'Aug 30 (Wed)', type: 'TEST DAY 🚨', tasks: [{id: 't42', text: 'Morning: Full Mock Test (MIP + NLM)'}, {id: 't43', text: 'Afternoon: Brutal Analysis'}, {id: 't44', text: 'Evening: Revise Weak Topics'}], testDay: true },
+    const missionPlan = [
+        { phase: 'Phase 1: Clearing the Path', objective: 'Motion in a Straight Line ko khatam karke raaste se hatao.' },
+        ...Array.from({ length: 8 }, (_, i) => ({ date: `Aug ${i + 7}`, day: ['Thu','Fri','Sat','Sun','Mon','Tue','Wed','Thu'][i], tasks: [{id: `msl${i+1}`, text: `MSL Lecture ${i+1}`}, {id: `mslp${i+1}`, text: 'Practice Block (30-40 Qs)'}], milestone: i === 7 ? 'MSL COMPLETE ✅' : null })),
+        
+        { phase: 'Phase 2: The Main Assault', objective: 'MIP aur NLM par poori taakat se hamla karna.' },
+        ...Array.from({ length: 9 }, (_, i) => ({ date: `Aug ${i + 15}`, day: ['Fri','Sat','Sun','Mon','Tue','Wed','Thu','Fri','Sat'][i], tasks: [{id: `mip${i+1}`, text: `MIP Lecture ${i+1}`}, {id: `mipp${i+1}`, text: 'Practice Block (40-50 Qs)'}], milestone: i === 8 ? 'MIP COMPLETE ✅' : null })),
+        { date: 'Aug 24', day: 'Sun', type: 'Strategic Reinforcement', tasks: [{id: 'rev1', text: 'Full MSL + Full MIP Revision'}, {id: 'rev1p', text: 'Solve 75-100 mixed PYQs'}] },
+        ...Array.from({ length: 11 }, (_, i) => ({ date: `Aug ${i + 25 > 31 ? `Sep ${i+25-31}` : `Aug ${i+25}`}`, day: ['Mon','Tue','Wed','Thu','Fri','Sat','Sun','Mon','Tue','Wed','Thu'][i], tasks: [{id: `nlm${i+1}`, text: `NLM Lecture ${i+1}`}, {id: `nlmp${i+1}`, text: 'Practice Block (50+ Qs)'}], milestone: i === 10 ? 'NLM COMPLETE ✅' : null })),
+
+        { phase: 'Phase 3: The Decisive Strike', objective: 'Work, Energy & Power ko jeetna.' },
+        ...Array.from({ length: 10 }, (_, i) => ({ date: `Sep ${i + 5}`, day: ['Fri','Sat','Sun','Mon','Tue','Wed','Thu','Fri','Sat','Sun'][i], tasks: [{id: `wep${i+1}`, text: `WEP Lecture ${i+1}`}, {id: `wepp${i+1}`, text: 'Practice Block (50+ Qs)'}], milestone: i === 9 ? 'WEP COMPLETE ✅' : null })),
+
+        { phase: 'Phase 4: Pre-Battle Simulation & Victory', objective: 'Knowledge ko score mein convert karna.' },
+        { date: 'Sep 15-17', day: 'Mon-Wed', type: 'Deep Practice', tasks: [{id: 'dp1', text: 'Day 1: 100 advanced Qs (MIP)'}, {id: 'dp2', text: 'Day 2: 100 advanced Qs (NLM)'}, {id: 'dp3', text: 'Day 3: 100 advanced Qs (WEP)'}] },
+        { date: 'Sep 18-20', day: 'Thu-Sat', type: 'Weak-Point Annihilation', tasks: [{id: 'wpa1', text: 'Analyze Mistake Logs'}, {id: 'wpa2', text: 'Targeted strikes on weak topics'}] },
+        { date: 'Sep 21', day: 'Sun', type: 'War Simulation', tasks: [{id: 'ws1', text: 'Full Mock Test (MIP+NLM+WEP)'}, {id: 'ws2', text: 'Brutal analysis & final weak point list'}] },
+        { date: 'Sep 22', day: 'Mon', type: 'Final Reinforcement', tasks: [{id: 'fr1', text: 'Attack final weak points from mock'}] },
+        { date: 'Sep 23', day: 'Tue', type: 'Final Review', tasks: [{id: 'fr2', text: 'Revise short notes & formulas'}] },
+        { date: 'Sep 24', day: 'Wed', type: 'JUDGEMENT DAY 🏆', tasks: [{id: 'jd1', text: 'Execute. Dominate.'}], isJudgementDay: true },
     ];
 
     const container = document.getElementById('timeline-container');
     const progressBar = document.getElementById('progress-bar');
     const progressText = document.getElementById('progress-text');
-    const progressBarText = document.getElementById('progress-bar-text');
-    const allTasks = timelineData.flatMap(item => item.tasks || []);
+    const allTasks = missionPlan.flatMap(item => item.tasks || []);
     const totalTasks = allTasks.length;
 
     function renderTimeline() {
         let html = '';
-        timelineData.forEach(item => {
+        missionPlan.forEach(item => {
             if (item.phase) {
-                html += `<h2 class="font-teko text-3xl accent-lime tracking-wider my-8 text-center">${item.phase}</h2>`;
+                html += `
+                <div class="phase-header p-4 my-8">
+                    <h2 class="font-teko text-4xl text-red-400 tracking-wider">${item.phase}</h2>
+                    <p class="text-slate-400">${item.objective}</p>
+                </div>`;
             } else {
-                const dayTypeClass = item.type === 'Assault Day' ? 'border-red-500/50 bg-slate-800' :
-                                     item.type === 'Strategic Sunday' ? 'border-blue-500/50 bg-slate-800' :
-                                     item.testDay ? 'border-lime bg-slate-900' : 'bg-slate-800/50';
+                const dayTypeClass = item.type ? 'border-yellow-400/50' : item.isJudgementDay ? 'border-red-500' : 'border-slate-700';
                 
                 html += `
-                <div class="timeline-item relative pl-12 pb-8">
+                <div class="timeline-item relative pl-10 pb-8">
                     <div class="timeline-marker"></div>
-                    <div class="border ${dayTypeClass} p-5 rounded-lg shadow-lg">
+                    <div class="bg-slate-800/50 p-5 rounded-lg border ${dayTypeClass} shadow-lg">
                         <div class="flex flex-col sm:flex-row justify-between sm:items-center mb-4">
-                            <p class="font-bold text-white text-lg">${item.date}</p>
-                            <span class="font-semibold text-sm px-3 py-1 rounded-full mt-2 sm:mt-0 
-                                ${item.type === 'Assault Day' ? 'bg-red-500/20 text-red-300' :
-                                 item.type === 'Strategic Sunday' ? 'bg-blue-500/20 text-blue-300' :
-                                 item.testDay ? 'bg-lime/20 text-lime' : 'bg-slate-700 text-slate-300'}">
-                                ${item.type}
-                            </span>
+                            <p class="font-bold text-white text-xl">${item.date}, <span class="text-slate-400">${item.day}</span></p>
+                            ${item.type ? `<span class="font-semibold text-sm px-3 py-1 rounded-full mt-2 sm:mt-0 bg-yellow-900/50 text-yellow-300">${item.type}</span>` : ''}
                         </div>
                         <ul class="space-y-3">
                             ${item.tasks.map(task => `
                                 <li class="flex items-center">
                                     <input type="checkbox" id="${task.id}" data-task-id="${task.id}" class="task-checkbox">
-                                    <label for="${task.id}" class="ml-3 text-slate-300 cursor-pointer">${task.text}</label>
+                                    <label for="${task.id}" class="ml-4 text-slate-300 cursor-pointer text-lg">${task.text}</label>
                                 </li>
                             `).join('')}
                         </ul>
-                        ${item.milestone ? `<p class="mt-4 font-bold text-lime text-center border-t border-slate-700 pt-3">${item.milestone}</p>` : ''}
+                        ${item.milestone ? `<p class="mt-4 font-bold accent-yellow text-center border-t border-slate-700 pt-3">${item.milestone}</p>` : ''}
                     </div>
                 </div>`;
             }
@@ -197,12 +178,11 @@ document.addEventListener('DOMContentLoaded', () => {
         const progress = totalTasks > 0 ? (completedTasks / totalTasks) * 100 : 0;
         
         progressBar.style.width = `${progress}%`;
-        progressText.textContent = `${Math.round(progress)}%`;
-        progressBarText.textContent = `${completedTasks} / ${totalTasks} Tasks`;
+        progressText.textContent = `${Math.round(progress)}% (${completedTasks}/${totalTasks})`;
     }
 
     function startCountdown() {
-        const targetDate = new Date('2025-08-27T09:00:00');
+        const targetDate = new Date('2025-09-24T09:00:00');
         const countdownEl = document.getElementById('countdown');
 
         function update() {
@@ -210,7 +190,7 @@ document.addEventListener('DOMContentLoaded', () => {
             const diff = targetDate - now;
 
             if (diff <= 0) {
-                countdownEl.textContent = "TARGET ACQUIRED";
+                countdownEl.textContent = "EXECUTE";
                 return;
             }
 

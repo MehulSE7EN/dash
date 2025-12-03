@@ -1,305 +1,694 @@
 <!DOCTYPE html>
-<html lang="hi">
+<html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Strategic Command Deck</title>
+    <title>CEREBRO: TACTICAL RECALL</title>
+    
+    <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Teko:wght@600;700&display=swap" rel="stylesheet">
-    <!-- Chosen Palette: Strategic Command (Dark Slate, Cool Gray, Electric Blue Accent) -->
-    <!-- Application Structure Plan: A professional, multi-pane dashboard layout. A fixed left sidebar acts as the main navigation hub for different "theaters of operation" (Dashboard, Biology, Chemistry, Tests, and now Physics). The main content area is a dynamic grid that presents high-level, synthesized data. The dashboard view focuses on cross-domain insights: overall progress, a unified upcoming deadlines list, and a performance radar chart comparing subject mastery. This structure is chosen to elevate the user from a day-to-day task manager to a high-level strategist who can see the entire battlefield at once and make informed decisions based on integrated data. -->
-    <!-- Visualization & Content Choices:
-      - Report Info: Progress from all apps -> Goal: Unified Status View -> Viz/Method: Three distinct donut charts for each subject, feeding into a main progress bar. Interaction: Hover tooltips. Justification: Separating the subject progress visually before combining them allows for quick identification of the weakest link.
-      - Report Info: Subject Mastery -> Goal: Comparative Analysis -> Viz/Method: Radar Chart (Chart.js). Interaction: Hover tooltips. Justification: A radar chart is the most effective way to visualize multi-variable data (like performance across different units) and instantly spot imbalances or strengths.
-      - Report Info: All upcoming tasks -> Goal: Unified Task Management -> Viz/Method: A single, chronological "Upcoming Deadlines" list. Interaction: None. Justification: Consolidates all critical next steps into one scannable list, eliminating the need to check multiple planners.
-    -->
-    <!-- CONFIRMATION: NO SVG graphics used. NO Mermaid JS used. -->
+    
+    <!-- Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Black+Ops+One&family=Share+Tech+Mono&family=Rajdhani:wght@500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+
     <style>
+        :root {
+            --bg-deep: #020406;
+            --hud-glass: rgba(10, 20, 30, 0.85);
+            --hud-border: rgba(0, 243, 255, 0.2);
+            
+            --neon-cyan: #00f3ff;
+            --neon-red: #ff003c;
+            --neon-gold: #ffd700;
+            --neon-green: #0aff0a;
+            
+            --text-primary: #e2e8f0;
+        }
+
         body {
-            font-family: 'Inter', sans-serif;
-            background-color: #f3f4f6; /* gray-100 */
+            background-color: var(--bg-deep);
+            color: var(--text-primary);
+            font-family: 'Rajdhani', sans-serif;
+            background-image: 
+                radial-gradient(circle at 50% 50%, rgba(0, 243, 255, 0.03) 0%, transparent 50%),
+                linear-gradient(0deg, rgba(0,0,0,0.9) 0%, rgba(0,0,0,0.9) 100%),
+                url('https://www.transparenttextures.com/patterns/carbon-fibre.png');
+            min-height: 100vh;
+            overflow-x: hidden;
         }
-        .font-teko {
-            font-family: 'Teko', sans-serif;
-        }
-        .sidebar {
-            background-color: #111827; /* gray-900 */
-        }
-        .nav-link {
-            transition: all 0.15s ease-in-out;
-            color: #9ca3b0; /* gray-400 */
-        }
-        .nav-link:hover {
-            background-color: #374151; /* gray-700 */
-            color: #ffffff;
-        }
-        .nav-link.active {
-            background-color: #2563eb; /* blue-600 */
-            color: #ffffff;
-            font-weight: 600;
-        }
-        .chart-container {
+
+        .font-mono-tech { font-family: 'Share Tech Mono', monospace; }
+        .font-military { font-family: 'Black Ops One', cursive; letter-spacing: 1px; }
+
+        /* --- MILITARY HUD COMPONENTS --- */
+        
+        /* The Panel */
+        .hud-panel {
+            background: var(--hud-glass);
+            border: 1px solid var(--hud-border);
             position: relative;
-            height: 280px;
+            backdrop-filter: blur(8px);
+            box-shadow: 0 0 15px rgba(0,0,0,0.7);
+            clip-path: polygon(
+                0 0, 
+                100% 0, 
+                100% calc(100% - 15px), 
+                calc(100% - 15px) 100%, 
+                0 100%
+            );
+            transition: all 0.3s ease;
         }
-        .progress-ring-container {
-            position: relative;
-            width: 100px;
-            height: 100px;
+
+        .hud-panel:hover {
+            border-color: var(--neon-cyan);
+            box-shadow: 0 0 20px rgba(0, 243, 255, 0.1);
         }
-        .content-section iframe {
+
+        .hud-panel::before {
+            content: '';
+            position: absolute;
+            top: 0; left: 0; width: 4px; height: 100%;
+            background: rgba(255,255,255,0.1);
+            transition: 0.3s;
+        }
+
+        .hud-panel.critical { border-color: var(--neon-red); }
+        .hud-panel.critical::before { background: var(--neon-red); box-shadow: 0 0 10px var(--neon-red); }
+        
+        .hud-panel.tactical { border-color: var(--neon-gold); }
+        .hud-panel.tactical::before { background: var(--neon-gold); box-shadow: 0 0 10px var(--neon-gold); }
+        
+        .hud-panel.secure { border-color: var(--neon-green); }
+        .hud-panel.secure::before { background: var(--neon-green); box-shadow: 0 0 10px var(--neon-green); }
+
+        /* HUD Buttons */
+        .hud-btn {
+            background: rgba(0, 243, 255, 0.05);
+            border: 1px solid var(--neon-cyan);
+            color: var(--neon-cyan);
+            font-family: 'Share Tech Mono', monospace;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            transition: all 0.2s;
+            clip-path: polygon(10px 0, 100% 0, 100% calc(100% - 10px), calc(100% - 10px) 100%, 0 100%, 0 10px);
+        }
+        .hud-btn:hover {
+            background: var(--neon-cyan);
+            color: #000;
+            box-shadow: 0 0 20px var(--neon-cyan);
+            transform: translateY(-1px);
+        }
+        
+        .hud-btn.danger { border-color: var(--neon-red); color: var(--neon-red); background: rgba(255, 0, 60, 0.05); }
+        .hud-btn.danger:hover { background: var(--neon-red); color: #fff; box-shadow: 0 0 20px var(--neon-red); }
+
+        /* Progress Bar */
+        .tech-bar-track { background: rgba(255,255,255,0.05); height: 4px; width: 100%; position: relative; overflow: hidden; }
+        .tech-bar-fill { height: 100%; background: var(--neon-cyan); box-shadow: 0 0 10px var(--neon-cyan); transition: width 0.5s ease-out; }
+
+        /* Glitch Effect on Hover */
+        .glitch-hover:hover {
+            animation: glitch-anim 0.3s infinite;
+        }
+        @keyframes glitch-anim {
+            0% { transform: translate(0) }
+            20% { transform: translate(-2px, 2px) }
+            40% { transform: translate(-2px, -2px) }
+            60% { transform: translate(2px, 2px) }
+            80% { transform: translate(2px, -2px) }
+            100% { transform: translate(0) }
+        }
+
+        /* Loading Scanline */
+        .scanline {
             width: 100%;
-            height: 85vh;
-            border: none;
-            border-radius: 0.5rem;
+            height: 2px;
+            background: var(--neon-cyan);
+            position: absolute;
+            z-index: 50;
+            animation: scan 2s linear infinite;
+            opacity: 0.5;
+            box-shadow: 0 0 10px var(--neon-cyan);
+        }
+        @keyframes scan {
+            0% { top: 0%; opacity: 0; }
+            10% { opacity: 1; }
+            90% { opacity: 1; }
+            100% { top: 100%; opacity: 0; }
         }
 
-        </style>
-     
+        /* Filter Tabs */
+        .tab-btn {
+            font-family: 'Share Tech Mono', monospace;
+            border-bottom: 2px solid transparent;
+            color: #64748b;
+            transition: 0.3s;
+        }
+        .tab-btn.active {
+            color: var(--neon-cyan);
+            border-bottom-color: var(--neon-cyan);
+            text-shadow: 0 0 8px var(--neon-cyan);
+        }
+
+    </style>
 </head>
-<body class="flex h-screen overflow-hidden">
+<body class="p-4 md:p-8 selection:bg-cyan-500 selection:text-black">
 
-    <!-- Sidebar Navigation -->
-    <aside class="sidebar w-20 md:w-64 flex-shrink-0 flex flex-col text-white">
-        <div class="h-20 flex items-center justify-center border-b border-gray-700 flex-shrink-0">
-            <h1 class="font-teko text-3xl text-white hidden md:block">COMMAND DECK</h1>
-            <span class="font-teko text-3xl text-white md:hidden">CD</span>
+    <!-- Loading Screen -->
+    <div id="loading-overlay" class="fixed inset-0 z-[100] bg-black flex flex-col items-center justify-center transition-opacity duration-500">
+        <div class="text-neon-cyan font-military text-4xl mb-4 tracking-widest animate-pulse">CEREBRO SYSTEM</div>
+        <div class="font-mono-tech text-gray-500 text-sm">INITIALIZING SECURE CONNECTION...</div>
+        <div class="mt-4 w-64 h-1 bg-gray-900 overflow-hidden relative">
+            <div class="absolute inset-0 bg-cyan-500 animate-[scan_1s_infinite]"></div>
         </div>
-        <nav class="flex-1 px-2 md:px-4 py-6 space-y-2 overflow-y-auto">
-            <a href="#dashboard" class="nav-link active flex items-center p-3 rounded-lg">
-                <span class="text-2xl">📊</span><span class="ml-4 hidden md:block">Dashboard</span>
-            </a>
-            <a href="#biology" class="nav-link flex items-center p-3 rounded-lg">
-                <span class="text-2xl">🧬</span><span class="ml-4 hidden md:block">Biology Protocol</span>
-            </a>
-            <a href="#chemistry" class="nav-link flex items-center p-3 rounded-lg">
-                <span class="text-2xl">🧪</span><span class="ml-4 hidden md:block">Chemistry Blueprint</span>
-            </a>
-            <a href="#physics" class="nav-link flex items-center p-3 rounded-lg">
-                <span class="text-2xl">⚡️</span><span class="ml-4 hidden md:block">Physics Tracker</span>
-            </a>
-            <a href="#tests" class="nav-link flex items-center p-3 rounded-lg">
-                <span class="text-2xl">🎯</span><span class="ml-4 hidden md:block">Test Planner</span>
-            </a>
-            <a href="#settings" class="nav-link flex items-center p-3 rounded-lg">
-                <span class="text-2xl">☠️</span><span class="ml-4 hidden md:block">Overlord</span>
-            </a>
-             <a href="#biologytrack" class="nav-link flex items-center p-3 rounded-lg">
-                <span class="text-2xl">🥶</span><span class="ml-4 hidden md:block">BiologyTrack</span>
-            </a>
-        </nav>
-        </div>
-    </aside>
+    </div>
 
-    <!-- Main Content -->
-    <main class="flex-1 flex flex-col overflow-hidden">
-        <header class="h-20 bg-white border-b border-gray-200 flex items-center justify-between px-8 flex-shrink-0">
-            <h2 id="page-title" class="font-teko text-4xl text-gray-800">Strategic Dashboard</h2>
-            <div class="flex items-center">
-                <div class="w-10 h-10 bg-gray-800 rounded-full ml-4 flex items-center justify-center text-white font-bold">
-                    <span>C</span>
+    <!-- Main Interface -->
+    <div class="max-w-7xl mx-auto relative">
+        
+        <!-- Decoration -->
+        <div class="fixed top-0 left-0 w-full h-full pointer-events-none opacity-10" style="background: repeating-linear-gradient(0deg, transparent 0px, transparent 1px, #00f3ff 2px);"></div>
+
+        <!-- Header -->
+        <header class="flex flex-col md:flex-row justify-between items-end mb-10 border-b border-white/10 pb-6 relative">
+            <div class="absolute -bottom-[1px] left-0 w-24 h-[2px] bg-cyan-500 shadow-[0_0_10px_#00f3ff]"></div>
+            <div>
+                <div class="flex items-center gap-3 mb-2">
+                    <i class="fas fa-microchip text-3xl text-cyan-500 animate-spin-slow"></i>
+                    <h1 class="text-4xl md:text-6xl font-military text-white tracking-wider">
+                        CEREBRO <span class="text-cyan-500 text-lg align-top font-mono-tech">v2.0</span>
+                    </h1>
                 </div>
+                <p class="text-gray-500 font-mono-tech text-xs tracking-[0.3em] uppercase">Tactical Recall System // Commander Mode</p>
+            </div>
+            <div class="text-right mt-4 md:mt-0 font-mono-tech">
+                <div class="text-xs text-gray-500 uppercase">System Status</div>
+                <div id="connection-status" class="text-green-500 text-sm mb-1">ONLINE</div>
+                <div id="system-time" class="text-2xl text-white font-bold tracking-widest">00:00:00</div>
             </div>
         </header>
-        
-        <div id="content-area" class="flex-1 overflow-y-auto p-4 md:p-8 bg-gray-50">
-            <!-- Dashboard Section -->
-            <section id="dashboard-content" class="content-section">
-                <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
-                    <!-- Left Column -->
-                    <div class="lg:col-span-2 space-y-8">
-                        <div class="bg-white p-6 rounded-lg border border-gray-200">
-                            <h3 class="font-bold text-xl text-gray-800 mb-4">Overall Mission Progress</h3>
-                            <div class="flex flex-col sm:flex-row items-center justify-around gap-6">
-                                <div class="text-center">
-                                    <div class="progress-ring-container"><canvas id="bioProgressRing"></canvas></div>
-                                    <p class="mt-2 font-semibold text-gray-600">Biology</p>
-                                </div>
-                                <div class="text-center">
-                                    <div class="progress-ring-container"><canvas id="chemProgressRing"></canvas></div>
-                                    <p class="mt-2 font-semibold text-gray-600">Chemistry</p>
-                                </div>
-                                <div class="text-center">
-                                    <div class="progress-ring-container"><canvas id="testProgressRing"></canvas></div>
-                                    <p class="mt-2 font-semibold text-gray-600">Tests</p>
-                                </div>
-                            </div>
-                        </div>
-                        <div class="bg-white p-6 rounded-lg border border-gray-200">
-                            <h3 class="font-bold text-xl text-gray-800 mb-4">Performance Snapshot</h3>
-                            <div class="chart-container"><canvas id="performanceRadarChart"></canvas></div>
-                        </div>
-                    </div>
-                    <!-- Right Column -->
-                    <div class="lg:col-span-1 space-y-8">
-                        <div class="bg-white p-6 rounded-lg border border-gray-200">
-                            <h3 class="font-bold text-xl text-gray-800 mb-4">Upcoming Deadlines</h3>
-                            <ul class="space-y-4">
-                                <li class="flex items-center">
-                                    <span class="w-10 h-10 bg-red-500/10 text-red-700 rounded-lg flex flex-col items-center justify-center font-bold leading-tight"><span class="text-xs">AUG</span><span>09</span></span>
-                                    <div class="ml-4">
-                                        <p class="font-semibold text-gray-800">MSL Complete</p>
-                                        <p class="text-sm text-gray-500">Physics Sprint: Phase 1</p>
-                                    </div>
-                                </li>
-                                <li class="flex items-center">
-                                    <span class="w-10 h-10 bg-green-500/10 text-green-700 rounded-lg flex flex-col items-center justify-center font-bold leading-tight"><span class="text-xs">AUG</span><span>18</span></span>
-                                    <div class="ml-4">
-                                        <p class="font-semibold text-gray-800">MIP Complete</p>
-                                        <p class="text-sm text-gray-500">Physics Sprint: Phase 2</p>
-                                    </div>
-                                </li>
-                                <li class="flex items-center">
-                                    <span class="w-10 h-10 bg-blue-500/10 text-blue-700 rounded-lg flex flex-col items-center justify-center font-bold leading-tight"><span class="text-xs">AUG</span><span>27</span></span>
-                                    <div class="ml-4">
-                                        <p class="font-semibold text-gray-800">PHYSICS TEST DAY</p>
-                                        <p class="text-sm text-gray-500">MIP + NLM</p>
-                                    </div>
-                                </li>
-                            </ul>
-                        </div>
-                         <div class="bg-white p-6 rounded-lg border border-gray-200">
-                            <h3 class="font-bold text-xl text-gray-800 mb-4">Quick Stats</h3>
-                            <div class="grid grid-cols-2 gap-4 text-center">
-                                <div>
-                                    <p class="font-teko text-4xl font-bold text-blue-600">28</p>
-                                    <p class="text-sm text-gray-500">Physics Lectures</p>
-                                </div>
-                                <div>
-                                    <p class="font-teko text-4xl font-bold text-blue-600">21</p>
-                                    <p class="text-sm text-gray-500">Days to Target</p>
-                                </div>
-                                 <div>
-                                    <p class="font-teko text-4xl font-bold text-blue-600">88%</p>
-                                    <p class="text-sm text-gray-500">Avg. Accuracy</p>
-                                </div>
-                                 <div>
-                                    <p class="font-teko text-4xl font-bold text-blue-600">12</p>
-                                    <p class="text-sm text-gray-500">Critical Errors Logged</p>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </section>
 
-            <!-- Other Sections (hidden by default) -->
-            <section id="biology-content" class="content-section hidden">
-                <iframe src="https://biologydashboard.netlify.app"></iframe>
-            </section>
-            <section id="chemistry-content" class="content-section hidden">
-                <iframe src="https://chemistrydashboard.netlify.app"></iframe>
-            </section>
-            <section id="physics-content" class="content-section hidden">
-                  <iframe src="https://physicsupforme.netlify.app"></iframe>
+        <!-- Command Deck (Stats) -->
+        <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-10">
+            <!-- Stat Card 1 -->
+            <div class="hud-panel p-4 flex flex-col justify-between h-24">
+                <div class="text-xs text-gray-400 font-mono-tech uppercase">Total Intel Units</div>
+                <div class="flex justify-between items-end">
+                    <div id="totalChapters" class="text-3xl font-bold text-white font-military">0</div>
+                    <i class="fas fa-database text-cyan-900 text-2xl"></i>
+                </div>
+            </div>
+            
+            <!-- Stat Card 2 -->
+            <div class="hud-panel p-4 flex flex-col justify-between h-24">
+                <div class="text-xs text-gray-400 font-mono-tech uppercase">Memory Integrity</div>
+                <div class="flex justify-between items-end">
+                    <div id="masteryPercent" class="text-3xl font-bold text-cyan-400 font-military">0%</div>
+                    <i class="fas fa-brain text-cyan-900 text-2xl"></i>
+                </div>
+                <div class="tech-bar-track mt-1"><div id="integrityBar" class="tech-bar-fill" style="width: 0%"></div></div>
+            </div>
 
-            </section>
-            <section id="tests-content" class="content-section hidden">
-                 <iframe src="https://testdashboardbyme.netlify.app"></iframe>
-            </section>
-            <section id="settings-content" class="content-section hidden">
-                    <iframe src="https://chemistryrev.netlify.app"></iframe>
+            <!-- Stat Card 3 (Action Item) -->
+            <div class="hud-panel tactical p-4 flex flex-col justify-between h-24 md:col-span-2">
+                <div class="flex justify-between items-start">
+                    <div class="text-xs text-yellow-500 font-mono-tech uppercase animate-pulse">!! PRIORITY TARGET !!</div>
                 </div>
-        <section id="biology-track" class="content-section hidden">
-                    <iframe src="https://chemistryrev.netlify.app"></iframe>
+                <div id="priorityTarget" class="text-xl md:text-2xl font-bold text-white font-military truncate tracking-wide">
+                    SCANNING...
                 </div>
-            </section>
+            </div>
         </div>
-    </main>
 
-<script>
-document.addEventListener('DOMContentLoaded', () => {
-    // --- Chart Config ---
-    const createRingChart = (canvasId, progress, color) => {
-        const ctx = document.getElementById(canvasId).getContext('2d');
-        new Chart(ctx, {
-            type: 'doughnut',
-            data: {
-                datasets: [{ data: [progress, 100 - progress], backgroundColor: [color, '#e5e7eb'], borderWidth: 0 }]
-            },
-            options: {
-                responsive: true, maintainAspectRatio: false, cutout: '75%',
-                plugins: { legend: { display: false }, tooltip: { enabled: false } },
-                animation: { animateScale: true, animateRotate: true }
+        <!-- Filter & Actions -->
+        <div class="flex flex-col md:flex-row justify-between items-center mb-8 gap-6">
+            <div id="filter-container" class="flex gap-6 text-sm md:text-lg overflow-x-auto w-full md:w-auto pb-2 md:pb-0">
+                <button class="tab-btn active" data-filter="All">ALL SECTORS</button>
+                <button class="tab-btn" data-filter="Physics">PHYSICS</button>
+                <button class="tab-btn" data-filter="Chemistry">CHEMISTRY</button>
+                <button class="tab-btn" data-filter="Biology">BIOLOGY</button>
+            </div>
+            <button id="logNewChapterBtn" class="hud-btn px-8 py-3 font-bold flex items-center gap-2 group whitespace-nowrap">
+                <i class="fas fa-plus group-hover:rotate-90 transition"></i> LOG NEW UNIT
+            </button>
+        </div>
+
+        <!-- Triage Grid -->
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+            
+            <!-- SECTOR 1: CRITICAL (RED) -->
+            <div class="space-y-4">
+                <div class="flex items-center justify-between border-b border-red-900/50 pb-2 mb-4">
+                    <h2 class="font-military text-red-500 tracking-wider text-xl"><i class="fas fa-exclamation-triangle mr-2"></i>CRITICAL</h2>
+                    <span id="count-critical" class="bg-red-900/20 text-red-500 font-mono-tech text-xs px-2 py-1 border border-red-900/50 rounded">0 UNITS</span>
+                </div>
+                <div id="urgent-container" class="space-y-3 min-h-[100px]">
+                    <!-- Injected -->
+                </div>
+            </div>
+
+            <!-- SECTOR 2: TACTICAL (GOLD) -->
+            <div class="space-y-4">
+                <div class="flex items-center justify-between border-b border-yellow-900/50 pb-2 mb-4">
+                    <h2 class="font-military text-yellow-500 tracking-wider text-xl"><i class="fas fa-tasks mr-2"></i>TACTICAL</h2>
+                    <span id="count-tactical" class="bg-yellow-900/20 text-yellow-500 font-mono-tech text-xs px-2 py-1 border border-yellow-900/50 rounded">0 UNITS</span>
+                </div>
+                <div id="upcoming-container" class="space-y-3 min-h-[100px]">
+                    <!-- Injected -->
+                </div>
+            </div>
+
+            <!-- SECTOR 3: SECURE (GREEN) -->
+            <div class="space-y-4">
+                <div class="flex items-center justify-between border-b border-green-900/50 pb-2 mb-4">
+                    <h2 class="font-military text-green-500 tracking-wider text-xl"><i class="fas fa-shield-alt mr-2"></i>SECURE</h2>
+                    <span id="count-secure" class="bg-green-900/20 text-green-500 font-mono-tech text-xs px-2 py-1 border border-green-900/50 rounded">0 UNITS</span>
+                </div>
+                <div id="conquered-container" class="space-y-3 min-h-[100px]">
+                    <!-- Injected -->
+                </div>
+            </div>
+
+        </div>
+
+    </div>
+
+    <!-- === MODALS === -->
+
+    <!-- Backdrop -->
+    <div id="modalBackdrop" class="fixed inset-0 bg-black/90 backdrop-blur-sm z-40 hidden transition-opacity duration-300"></div>
+
+    <!-- Chapter Log Modal -->
+    <div id="chapterModal" class="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-50 hidden w-full max-w-lg">
+        <div class="hud-panel p-8 bg-black">
+            <h2 class="font-military text-2xl text-cyan-400 mb-6 border-b border-gray-800 pb-2">INPUT DATA STREAM</h2>
+            <form id="chapterForm" class="space-y-6">
+                <input type="hidden" id="chapterId">
+                <div>
+                    <label class="block text-gray-500 font-mono-tech text-xs mb-2">SUBJECT CLASS</label>
+                    <select id="subject" class="w-full bg-gray-900 border border-gray-700 text-white p-3 font-mono-tech focus:border-cyan-500 focus:outline-none transition" required>
+                        <option>Physics</option>
+                        <option>Chemistry</option>
+                        <option>Biology</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="block text-gray-500 font-mono-tech text-xs mb-2">UNIT CODENAME</label>
+                    <input type="text" id="chapterName" class="w-full bg-gray-900 border border-gray-700 text-white p-3 font-mono-tech focus:border-cyan-500 focus:outline-none transition" placeholder="Ex: Electrostatics" required>
+                </div>
+                <div>
+                    <label class="block text-gray-500 font-mono-tech text-xs mb-2">EXECUTION DATE</label>
+                    <input type="date" id="lastRevised" class="w-full bg-gray-900 border border-gray-700 text-white p-3 font-mono-tech focus:border-cyan-500 focus:outline-none transition" required>
+                </div>
+                <div class="flex justify-end gap-4 mt-8">
+                    <button type="button" class="close-modal text-gray-500 hover:text-white px-4 py-2 font-mono-tech text-sm">ABORT</button>
+                    <button type="submit" class="hud-btn px-6 py-2 font-bold">ENGAGE</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Protocol Detail Modal -->
+    <div id="protocolModal" class="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-50 hidden w-full max-w-lg">
+        <div class="hud-panel tactical p-8 bg-black">
+            <div class="flex justify-between items-start mb-4">
+                <h2 id="protocolModalTitle" class="font-military text-2xl text-yellow-500">PROTOCOL: ACTIVE</h2>
+                <div class="font-mono-tech text-xs text-gray-500 border border-gray-700 px-2 py-1" id="protocolLevelDisplay">LEVEL 0</div>
+            </div>
+            
+            <div id="protocol-content" class="text-gray-300 font-mono-tech text-sm leading-relaxed mb-8 border border-gray-800 bg-gray-900/50 p-4">
+                <!-- Content injected here -->
+            </div>
+
+            <div class="flex justify-between items-center pt-4 border-t border-gray-800">
+                <button type="button" id="deleteBtn" class="text-red-500 hover:text-red-400 font-mono-tech text-xs flex items-center gap-2">
+                    <i class="fas fa-trash"></i> DELETE UNIT
+                </button>
+                <div class="flex gap-3">
+                    <button type="button" class="close-modal border border-gray-600 text-gray-400 px-4 py-2 font-mono-tech text-xs hover:text-white transition">CANCEL</button>
+                    <button type="button" id="completeRevisionBtn" class="hud-btn px-6 py-2 font-bold text-sm">
+                        MISSION ACCOMPLISHED
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- --- MODULE LOGIC: FIREBASE V9+ --- -->
+    <script type="module">
+        // Import the functions you need from the SDKs you need
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.0.2/firebase-app.js";
+        import { getFirestore, collection, addDoc, updateDoc, deleteDoc, doc, onSnapshot, query, orderBy, setDoc } from "https://www.gstatic.com/firebasejs/11.0.2/firebase-firestore.js";
+        import { getAuth, signInAnonymously, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.0.2/firebase-auth.js";
+
+        // CONFIGURATION
+        const firebaseConfig = {
+            apiKey: "AIzaSyCOQBZoXARd27hhC7NdraOjdsUGCIFgyGY",
+            authDomain: "d-day-af294.firebaseapp.com",
+            projectId: "d-day-af294",
+            storageBucket: "d-day-af294.firebasestorage.app",
+            messagingSenderId: "514536398044",
+            appId: "1:514536398044:web:83cd98c8b8d5af8d46a819",
+            measurementId: "G-KV8GVSYGJE"
+        };
+
+        // INITIALIZE
+        const app = initializeApp(firebaseConfig);
+        const db = getFirestore(app);
+        const auth = getAuth(app);
+        const chaptersColRef = collection(db, 'chapters');
+
+        // --- STATE MANAGEMENT ---
+        let chapters = [];
+        let activeFilter = 'All';
+        const revisionSchedule = [1, 3, 7, 14, 21, 30, 45, 60, 90, 120];
+
+        // --- DOM ELEMENTS ---
+        const el = {
+            loadingOverlay: document.getElementById('loading-overlay'),
+            connectionStatus: document.getElementById('connection-status'),
+            chapterForm: document.getElementById('chapterForm'),
+            // Containers
+            urgentContainer: document.getElementById('urgent-container'),
+            upcomingContainer: document.getElementById('upcoming-container'),
+            conqueredContainer: document.getElementById('conquered-container'),
+            // Stats
+            totalChapters: document.getElementById('totalChapters'),
+            masteryPercent: document.getElementById('masteryPercent'),
+            priorityTarget: document.getElementById('priorityTarget'),
+            integrityBar: document.getElementById('integrityBar'),
+            // Counts
+            countCritical: document.getElementById('count-critical'),
+            countTactical: document.getElementById('count-tactical'),
+            countSecure: document.getElementById('count-secure'),
+            // Modals
+            modalBackdrop: document.getElementById('modalBackdrop'),
+            chapterModal: document.getElementById('chapterModal'),
+            protocolModal: document.getElementById('protocolModal')
+        };
+
+        // --- AUTHENTICATION ---
+        signInAnonymously(auth)
+        .then(() => {
+            console.log("Commander Authenticated.");
+            el.connectionStatus.innerText = "SECURE LINK ESTABLISHED";
+            el.connectionStatus.classList.remove('text-red-500');
+            el.connectionStatus.classList.add('text-green-500');
+        })
+        .catch((error) => {
+            console.error("Auth Failed", error);
+            el.connectionStatus.innerText = "CONNECTION FAILED";
+            el.connectionStatus.classList.add('text-red-500');
+        });
+
+        // --- REALTIME DATA LISTENER ---
+        const q = query(chaptersColRef, orderBy('nextDueDate'));
+        onSnapshot(q, (snapshot) => {
+            chapters = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+            renderMatrix();
+            updateDashboard();
+            
+            // Remove Loader
+            el.loadingOverlay.style.opacity = '0';
+            setTimeout(() => el.loadingOverlay.style.display = 'none', 500);
+        });
+
+        // --- CORE LOGIC ---
+        function parseLocalDate(dateString) {
+            if (!dateString) return null;
+            const parts = dateString.split('-');
+            return new Date(parts[0], parts[1] - 1, parts[2]);
+        }
+
+        function calculateNextDueDate(lastRevisedDate, level) {
+            if (level >= revisionSchedule.length) return null;
+            const interval = revisionSchedule[level];
+            const nextDate = parseLocalDate(lastRevisedDate); 
+            if (!nextDate) return null;
+            nextDate.setDate(nextDate.getDate() + interval);
+            // Return YYYY-MM-DD
+            const y = nextDate.getFullYear();
+            const m = String(nextDate.getMonth() + 1).padStart(2, '0');
+            const d = String(nextDate.getDate()).padStart(2, '0');
+            return `${y}-${m}-${d}`;
+        }
+
+        function getRevisionProtocol(level) {
+            const protocols = [
+                `<strong>Protocol: RECALL (R1 - Day 1)</strong><br><span class="text-red-400">Critical Phase.</span> Solve 10 marked questions. Do NOT open theory unless absolutely stuck. Force the brain to retrieve.`,
+                `<strong>Protocol: STABILIZE (R2 - Day 3)</strong><br><span class="text-yellow-400">Volatile Phase.</span> Quick notes scan (10 mins) + 20 random MCQs from module.`,
+                `<strong>Protocol: CEMENT (R3 - Day 7)</strong><br>Memory is fading. Timed Quiz (30 Qs in 25 mins). Focus on speed.`,
+                `<strong>Protocol: BRIDGE I (R4 - Day 14)</strong><br><strong>The Fortnight Gap.</strong> Solve 15 Advanced PYQs. Link concepts with other chapters.`,
+                `<strong>Protocol: BRIDGE II (R5 - Day 21)</strong><br><strong>The 3-Week Trap.</strong> Assertion-Reasoning & Statement Qs focus. Don't let nuances slip.`,
+                `<strong>Protocol: MONTHLY (R6 - Day 30)</strong><br>Full Chapter Test. Deep Analysis of errors. Identify remaining weak spots.`,
+                `<strong>Protocol: FORTIFY (R7 - Day 45)</strong><br>Mid-term Reinforcement. Flashcards only + Error Log Review.`,
+                `<strong>Protocol: IMMUNIZE (R8 - Day 60+)</strong><br>Long Term maintenance. Solve 5 high-level Qs to keep neural path active.`
+            ];
+            return protocols[Math.min(level, protocols.length - 1)];
+        }
+
+        // --- UI RENDERING ---
+        function renderMatrix() {
+            // Clear containers
+            el.urgentContainer.innerHTML = '';
+            el.upcomingContainer.innerHTML = '';
+            el.conqueredContainer.innerHTML = '';
+
+            const today = new Date();
+            today.setHours(0, 0, 0, 0);
+
+            const filtered = chapters.filter(c => activeFilter === 'All' || c.subject === activeFilter);
+            
+            // Counters
+            let cCrit = 0, cTact = 0, cSec = 0;
+
+            if (filtered.length === 0) {
+                 el.urgentContainer.innerHTML = `<div class="text-center text-gray-700 font-mono-tech p-4 border border-dashed border-gray-800">NO INTELLIGENCE FOUND</div>`;
             }
-        });
-    };
 
-    const createRadarChart = () => {
-        const ctx = document.getElementById('performanceRadarChart').getContext('2d');
-        new Chart(ctx, {
-            type: 'radar',
-            data: {
-                labels: ['Physical Chem', 'Inorganic Chem', 'Organic Chem', 'Botany', 'Zoology', 'Test Accuracy'],
-                datasets: [{
-                    label: 'Current Mastery',
-                    data: [75, 85, 70, 90, 88, 80],
-                    backgroundColor: 'rgba(37, 99, 235, 0.2)',
-                    borderColor: 'rgba(37, 99, 235, 1)',
-                    borderWidth: 2,
-                    pointBackgroundColor: 'rgba(37, 99, 235, 1)',
-                    pointBorderColor: '#fff',
-                    pointHoverBackgroundColor: '#fff',
-                    pointHoverBorderColor: 'rgba(37, 99, 235, 1)'
-                }]
-            },
-            options: {
-                responsive: true, maintainAspectRatio: false,
-                scales: { r: { angleLines: { color: '#d1d5db' }, grid: { color: '#e5e7eb' }, pointLabels: { font: { size: 13, weight: '600' }, color: '#4b5563' }, ticks: { backdropColor: 'rgba(255, 255, 255, 0.75)', color: '#6b7280' } } },
-                plugins: { legend: { display: false } }
+            filtered.forEach(chap => {
+                const nextDueDate = chap.nextDueDate ? parseLocalDate(chap.nextDueDate) : null;
+                let container = el.conqueredContainer; // Default
+                let typeClass = 'secure';
+                let statusText = 'SAFE';
+                let statusColor = 'text-green-500';
+                let diffDays = 0;
+
+                if (nextDueDate) {
+                    diffDays = Math.ceil((nextDueDate - today) / (1000 * 60 * 60 * 24));
+                    
+                    if (diffDays <= 0) {
+                        // CRITICAL
+                        container = el.urgentContainer;
+                        typeClass = 'critical';
+                        statusText = diffDays === 0 ? 'DUE NOW' : `OVERDUE +${Math.abs(diffDays)}D`;
+                        statusColor = 'text-red-500';
+                        cCrit++;
+                    } else if (diffDays <= 5) {
+                        // TACTICAL
+                        container = el.upcomingContainer;
+                        typeClass = 'tactical';
+                        statusText = `T-MINUS ${diffDays}D`;
+                        statusColor = 'text-yellow-500';
+                        cTact++;
+                    } else {
+                        // SECURE
+                        statusText = `STABLE (${diffDays}D)`;
+                        cSec++;
+                    }
+                } else {
+                    statusText = 'COMPLETED';
+                }
+
+                const progress = (chap.revisionLevel / revisionSchedule.length) * 100;
+
+                // Create Card
+                const card = document.createElement('div');
+                card.className = `hud-panel ${typeClass} p-4 cursor-pointer group relative overflow-hidden`;
+                card.onclick = () => openProtocolModal(chap);
+
+                card.innerHTML = `
+                    <div class="flex justify-between items-start mb-2 relative z-10">
+                        <h3 class="font-bold text-lg text-white font-military tracking-wide group-hover:text-cyan-400 transition">${chap.name}</h3>
+                        <span class="font-mono-tech text-xs font-bold ${statusColor} border border-current px-2 py-0.5 rounded-sm bg-black/50">${statusText}</span>
+                    </div>
+                    <div class="flex justify-between items-end mb-3 relative z-10">
+                        <span class="text-xs text-gray-500 uppercase tracking-widest font-mono-tech">${chap.subject}</span>
+                        <span class="text-xs font-bold text-gray-400 bg-gray-900 px-2 py-0.5 rounded">LVL ${chap.revisionLevel}</span>
+                    </div>
+                    <div class="tech-bar-track rounded-full">
+                        <div class="tech-bar-fill" style="width: ${progress}%"></div>
+                    </div>
+                    <!-- Hover Effect -->
+                    <div class="absolute inset-0 bg-cyan-500/5 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none"></div>
+                `;
+                container.appendChild(card);
+            });
+
+            // Update Counts
+            el.countCritical.innerText = `${cCrit} UNITS`;
+            el.countTactical.innerText = `${cTact} UNITS`;
+            el.countSecure.innerText = `${cSec} UNITS`;
+        }
+
+        function updateDashboard() {
+            // Stats logic
+            const total = chapters.length;
+            el.totalChapters.innerText = total;
+
+            if (total === 0) {
+                el.masteryPercent.innerText = '0%';
+                el.integrityBar.style.width = '0%';
+                el.priorityTarget.innerText = 'WAITING FOR DATA...';
+                el.priorityTarget.classList.remove('text-red-500');
+                return;
             }
-        });
-    };
 
-    // --- Navigation Logic ---
-    const navLinks = document.querySelectorAll('.nav-link');
-    const contentSections = document.querySelectorAll('.content-section');
-    const pageTitle = document.getElementById('page-title');
-    const pageTitles = {
-        dashboard: 'Strategic Dashboard',
-        biology: 'Biology Protocol',
-        chemistry: 'Chemistry Blueprint',
-        physics: '',
-        tests: 'Master Test Planner',
-        settings: 'Settings'
-    };
+            const totalPossible = total * revisionSchedule.length;
+            const currentTotal = chapters.reduce((sum, c) => sum + (c.revisionLevel || 0), 0);
+            const mastery = Math.round((currentTotal / totalPossible) * 100);
+            
+            el.masteryPercent.innerText = `${mastery}%`;
+            el.integrityBar.style.width = `${mastery}%`;
 
-    const switchView = (targetId) => {
-        // Update content
-        contentSections.forEach(section => {
-            section.classList.toggle('hidden', section.id !== `${targetId}-content`);
-        });
-        // Update nav link styles
-        navLinks.forEach(link => {
-            link.classList.toggle('active', link.hash === `#${targetId}`);
-        });
-        // Update page title
-        pageTitle.textContent = pageTitles[targetId] || '';
-    };
+            // Priority Target Logic (Most overdue)
+            const today = new Date();
+            today.setHours(0,0,0,0);
+            
+            const dueChapters = chapters
+                .filter(c => c.nextDueDate)
+                .map(c => ({...c, dateObj: parseLocalDate(c.nextDueDate)}))
+                .sort((a,b) => a.dateObj - b.dateObj);
 
-    navLinks.forEach(link => {
-        link.addEventListener('click', (e) => {
+            if (dueChapters.length > 0 && dueChapters[0].dateObj <= today) {
+                const top = dueChapters[0];
+                el.priorityTarget.innerHTML = `<span class="text-red-500 glitch-hover">${top.name}</span> <span class="text-xs text-gray-500 block font-mono-tech mt-1">IMMEDIATE ACTION REQUIRED</span>`;
+            } else if (dueChapters.length > 0) {
+                el.priorityTarget.innerHTML = `<span class="text-yellow-500">${dueChapters[0].name}</span> <span class="text-xs text-gray-500 block font-mono-tech mt-1">NEXT OBJECTIVE</span>`;
+            } else {
+                el.priorityTarget.innerHTML = `<span class="text-green-500">ALL CLEAR</span> <span class="text-xs text-gray-500 block font-mono-tech mt-1">SYSTEMS OPTIMAL</span>`;
+            }
+        }
+
+        // --- MODAL HANDLING ---
+        function toggleModal(modalId, show) {
+            const m = document.getElementById(modalId);
+            if(show) {
+                el.modalBackdrop.classList.remove('hidden');
+                m.classList.remove('hidden');
+            } else {
+                el.modalBackdrop.classList.add('hidden');
+                document.querySelectorAll('#chapterModal, #protocolModal').forEach(x => x.classList.add('hidden'));
+            }
+        }
+
+        // Open Log Modal
+        document.getElementById('logNewChapterBtn').onclick = () => {
+            el.chapterForm.reset();
+            document.getElementById('chapterId').value = '';
+            // Default date today
+            const todayStr = new Date().toISOString().split('T')[0];
+            document.getElementById('lastRevised').value = todayStr;
+            toggleModal('chapterModal', true);
+        };
+
+        // Open Protocol Modal
+        window.openProtocolModal = (chap) => {
+            const modal = document.getElementById('protocolModal');
+            document.getElementById('protocolModalTitle').innerText = `PROTOCOL: ${chap.name}`;
+            document.getElementById('protocolLevelDisplay').innerText = `LEVEL ${chap.revisionLevel}`;
+            document.getElementById('protocol-content').innerHTML = getRevisionProtocol(chap.revisionLevel);
+            
+            // Setup Buttons
+            const completeBtn = document.getElementById('completeRevisionBtn');
+            const deleteBtn = document.getElementById('deleteBtn');
+
+            // Complete Action
+            completeBtn.onclick = async () => {
+                completeBtn.innerHTML = '<i class="fas fa-sync fa-spin"></i> UPDATING...';
+                try {
+                    const newLvl = (chap.revisionLevel || 0) + 1;
+                    const todayStr = new Date().toISOString().split('T')[0];
+                    const nextDate = calculateNextDueDate(todayStr, newLvl);
+                    
+                    await updateDoc(doc(db, 'chapters', chap.id), {
+                        revisionLevel: newLvl,
+                        lastRevised: todayStr,
+                        nextDueDate: nextDate
+                    });
+                    toggleModal('protocolModal', false);
+                } catch(e) { console.error(e); alert("Update Failed"); }
+                completeBtn.innerText = "MISSION ACCOMPLISHED";
+            };
+
+            // Delete Action
+            deleteBtn.onclick = async () => {
+                if(confirm("CONFIRM PURGE? This cannot be undone.")) {
+                    try {
+                        await deleteDoc(doc(db, 'chapters', chap.id));
+                        toggleModal('protocolModal', false);
+                    } catch(e) { console.error(e); alert("Delete Failed"); }
+                }
+            };
+
+            toggleModal('protocolModal', true);
+        };
+
+        // Close Handlers
+        document.querySelectorAll('.close-modal').forEach(btn => {
+            btn.onclick = () => toggleModal(null, false);
+        });
+        el.modalBackdrop.onclick = () => toggleModal(null, false);
+
+        // Form Submit
+        el.chapterForm.onsubmit = async (e) => {
             e.preventDefault();
-            const targetId = link.hash.substring(1);
-            // Store the last visited tab in localStorage
-            localStorage.setItem('lastVisitedTab', targetId);
-            switchView(targetId);
-        });
-    });
+            const id = document.getElementById('chapterId').value;
+            const sub = document.getElementById('subject').value;
+            const name = document.getElementById('chapterName').value;
+            const date = document.getElementById('lastRevised').value;
 
-    // --- Initial Load ---
-    createRingChart('bioProgressRing', 70, '#10b981'); // green
-    createRingChart('chemProgressRing', 55, '#f97316'); // orange
-    createRingChart('testProgressRing', 80, '#3b82f6'); // blue
-    createRadarChart();
-    
-    // Load the last visited tab or default to dashboard
-    const lastVisitedTab = localStorage.getItem('lastVisitedTab') || 'dashboard';
-    switchView(lastVisitedTab);
-});
-</script>
+            const submitBtn = el.chapterForm.querySelector('button[type="submit"]');
+            const originalText = submitBtn.innerText;
+            submitBtn.innerText = "PROCESSING...";
+
+            try {
+                if (id) {
+                    await updateDoc(doc(db, 'chapters', id), { subject: sub, name: name, lastRevised: date });
+                } else {
+                    const nextDate = calculateNextDueDate(date, 0);
+                    await addDoc(collection(db, 'chapters'), {
+                        subject: sub,
+                        name: name,
+                        lastRevised: date,
+                        revisionLevel: 0,
+                        nextDueDate: nextDate
+                    });
+                }
+                toggleModal('chapterModal', false);
+            } catch (err) {
+                console.error(err);
+                alert("Data Entry Failed. Check connection.");
+            }
+            submitBtn.innerText = originalText;
+        };
+
+        // Filter Tabs
+        document.getElementById('filter-container').addEventListener('click', (e) => {
+            if(e.target.matches('.tab-btn')) {
+                document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+                e.target.classList.add('active');
+                activeFilter = e.target.getAttribute('data-filter');
+                renderMatrix();
+            }
+        });
+
+        // Clock
+        setInterval(() => {
+            document.getElementById('system-time').innerText = new Date().toLocaleTimeString('en-GB');
+        }, 1000);
+
+    </script>
 </body>
 </html>
